@@ -20,6 +20,7 @@ public:
 signals:
     void eventPiecePlaced(const QString& eventId, const QString& pixPath, int slotId);
     void piecePlaced(const QString& pixResPath, int slotId);
+    void pieceMovedCityToCity(int fromSlotId, int toSlotId, Side side);
 
 protected:
     void wheelEvent(QWheelEvent *) override;

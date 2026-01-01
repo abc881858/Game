@@ -1,5 +1,6 @@
 #pragma once
 
+#include <QObject>
 #include <QGraphicsPixmapItem>
 #include "util.h"
 
@@ -7,8 +8,9 @@ inline constexpr int PieceType = QGraphicsItem::UserType + 200;
 
 class CitySlotItem;
 
-class PieceItem : public QGraphicsPixmapItem
+class PieceItem : public QObject, public QGraphicsPixmapItem
 {
+    Q_OBJECT
 public:
     explicit PieceItem(const QPixmap& pm);
 
@@ -29,7 +31,7 @@ public:
     int slotId() const { return m_slotId; }
     void setSlotId(int id) { m_slotId = id; }
     void snapToNearestCity();
-    void placeToSlot(class CitySlotItem* slot);  // 新增
+    void placeToSlot(class CitySlotItem* slot);
 
 protected:
     void mouseReleaseEvent(QGraphicsSceneMouseEvent* e) override;
@@ -47,7 +49,12 @@ private:
     QPointF m_lastValidPos;
 
     UnitKind m_kind = UnitKind::Other;
-    Side m_side = Side::Unknown;
     int m_level = 0;
-    QString m_pixPath; // 原资源路径
+    QString m_pixPath;
+
+    CitySlotItem* m_slot = nullptr; // 当前所在格（没有则 nullptr）
+    Side m_side = Side::Unknown;    // 你 setUnitMeta 时保存的阵营
+
+signals:
+    void movedCityToCity(int fromSlotId, int toSlotId, Side side);
 };

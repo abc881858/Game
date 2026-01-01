@@ -176,6 +176,8 @@ void GraphicsView::dropEvent(QDropEvent *e)
     }
 
     auto *item = new PieceItem(pm);
+    QObject::connect(item, &PieceItem::movedCityToCity, this, &GraphicsView::pieceMovedCityToCity);
+
     Side side;
     int lvl;
     if (parseCorpsFromPixPath(pixPath, side, lvl)) {

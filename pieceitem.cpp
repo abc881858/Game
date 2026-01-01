@@ -78,12 +78,9 @@ void PieceItem::snapToNearestCity()
 {
     if (!scene()) return;
 
-    const int oldId = m_slotId;
-
     QPointF pieceCenter = mapToScene(boundingRect().center());
 
-    QRectF searchRect(pieceCenter - QPointF(snapRadius, snapRadius),
-                      QSizeF(snapRadius * 2, snapRadius * 2));
+    QRectF searchRect(pieceCenter - QPointF(snapRadius, snapRadius), QSizeF(snapRadius * 2, snapRadius * 2));
 
     auto nearby = scene()->items(searchRect, Qt::IntersectsItemShape);
 
@@ -116,27 +113,8 @@ void PieceItem::snapToNearestCity()
         return;
     }
 
-    // ✅ 命中城市：归属到新城市
-    const int newId = best->id();
-    m_slotId = newId;
-
-    // 变化则重排旧城市
-    if (oldId != -1 && oldId != newId) {
-        CitySlotItem* oldSlot = nullptr;
-        for (auto* it : scene()->items()) {
-            if (it->type() != CitySlotType) continue;
-            auto* s = static_cast<CitySlotItem*>(it);
-            if (s->id() == oldId) { oldSlot = s; break; }
-        }
-        if (oldSlot) relayoutSlot(oldSlot);
-    }
-
-    // 重排新城市
-    relayoutSlot(best);
-
-    // ✅ 记录“有效落点”：通常 relayout 后该棋子已经被摆到队形位置了
-    m_lastValidSlotId = m_slotId;
-    m_lastValidPos = pos();
+    // ✅ 命中城市：统一交给 placeToSlot 做归属/重排/扣点触发
+    placeToSlot(best);
 }
 
 void PieceItem::relayoutSlot(CitySlotItem* slot)
@@ -181,18 +159,40 @@ void PieceItem::relayoutSlot(CitySlotItem* slot)
     }
 }
 
-void PieceItem::placeToSlot(CitySlotItem* slot)
+void PieceItem::placeToSlot(CitySlotItem* newSlot)
 {
-    if (!slot || !scene()) return;
+    if (!newSlot || !scene()) return;
 
-    // 归属
-    setSlotId(slot->id());
+    const int oldId = m_slotId;
+    const int newId = newSlot->id();
 
-    // 让该城市的所有棋子重新排（内部会把自己也摆到中心/品字/网格）
-    relayoutSlot(slot);
+    // 先更新归属
+    m_slot = newSlot;
+    m_slotId = newId;
 
+    // 如果换城，先重排旧城（避免旧城队形乱）
+    if (oldId != -1 && oldId != newId) {
+        CitySlotItem* oldSlotPtr = nullptr;
+        for (auto* it : scene()->items()) {
+            if (it->type() != CitySlotType) continue;
+            auto* s = static_cast<CitySlotItem*>(it);
+            if (s->id() == oldId) { oldSlotPtr = s; break; }
+        }
+        if (oldSlotPtr) relayoutSlot(oldSlotPtr);
+    }
+
+    // 重排新城（会把自己也排好位置）
+    relayoutSlot(newSlot);
+
+    // 记录有效落点
     m_lastValidSlotId = m_slotId;
     m_lastValidPos = pos();
+
+    // ✅ 触发移动信号
+    if (oldId != -1 && oldId != newId) {
+        qDebug() << "movedCityToCity" << oldId << newId << int(m_side);
+        emit movedCityToCity(oldId, newId, m_side);
+    }
 }
 
 void PieceItem::contextMenuEvent(QGraphicsSceneContextMenuEvent* e)

@@ -44,7 +44,10 @@ MainWindow::MainWindow(QWidget *parent)
     hostLayout->addWidget(m_DockManager);
 
     // ===== Central view + scene (setupReadyList needs scene) =====
-    View *view = new View;
+    m_view = new View;
+    connect(m_view, &View::pieceMovedCityToCity, this, [=](int /*from*/, int /*to*/, Side side){
+        addActionPoints(side, -2);
+    });
 
     scene = new QGraphicsScene(this);
     scene->setSceneRect(0, 0, 3164, 4032);
@@ -54,10 +57,10 @@ MainWindow::MainWindow(QWidget *parent)
     back_item->setZValue(0);
     scene->addItem(back_item);
 
-    view->view()->setScene(scene);
+    m_view->view()->setScene(scene);
 
     auto *centralDock = new ads::CDockWidget("场上");
-    centralDock->setWidget(view);
+    centralDock->setWidget(m_view);
     m_DockManager->setCentralWidget(centralDock);
 
     // ===== Log dock =====
@@ -81,16 +84,16 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->action1, &QAction::triggered, this, [=](){
         QSet<int> allowed = { 2,3,4,5,6,7,8,9,10,11,12,13,16,17,18,19,20,22,23,24,25,26,27,28,31,32,33,34 };
 
-        view->view()->setEventDropSlots(allowed);
+        m_view->view()->setEventDropSlots(allowed);
 
         auto* dlg = new EventDialog(this);
         dlg->setEventId("SOV_RESERVE_3x4");
         dlg->addEventPiece("4级兵团", ":/S/S_4JBT.png", 3);
 
-        connect(view->view(), &GraphicsView::eventPiecePlaced, dlg, &EventDialog::onEventPiecePlaced);
+        connect(m_view->view(), &GraphicsView::eventPiecePlaced, dlg, &EventDialog::onEventPiecePlaced);
 
         connect(dlg, &QDialog::finished, this, [=](int){
-            view->view()->clearEventDropSlots();
+            m_view->view()->clearEventDropSlots();
             dlg->deleteLater();
         });
 
@@ -98,7 +101,7 @@ MainWindow::MainWindow(QWidget *parent)
     });
 
     // ===== 普通落子：苏联大行动签 -> 苏联行动点+6 =====
-    connect(view->view(), &GraphicsView::piecePlaced, this,
+    connect(m_view->view(), &GraphicsView::piecePlaced, this,
             [=](const QString& pixResPath, int /*slotId*/){
 
         // 只处理行动签
@@ -136,6 +139,8 @@ PieceItem* MainWindow::spawnPieceToCity(int slotId, const QString& pixResPath, q
     if (pm.isNull()) return nullptr;
 
     auto* p = new PieceItem(pm);
+    connect(p, &PieceItem::movedCityToCity, m_view->view(), &GraphicsView::pieceMovedCityToCity);
+
     p->setZValue(z);
     scene->addItem(p);
     p->placeToSlot(slot);

@@ -22,4 +22,5 @@ public slots:
     void setResetButtonEnabled();
     void resetView();
 signals:
+    void pieceMovedCityToCity(int fromSlotId, int toSlotId, Side side);
 };
