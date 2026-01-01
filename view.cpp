@@ -62,9 +62,9 @@ View::View(QWidget *parent)
     setupMatrix();
 }
 
-QGraphicsView *View::view() const
+GraphicsView *View::view() const
 {
-    return static_cast<QGraphicsView *>(graphicsView);
+    return graphicsView;
 }
 
 void View::setupMatrix()

@@ -147,13 +147,13 @@ void GraphicsView::dropEvent(QDropEvent *e)
 
     QPointF scenePos = mapToScene(e->position().toPoint());
 
-    // ✅ 行动签：只要 drop 到棋盘（sceneRect）就消耗，不需要城市格
     if (isNormal && isActionTokenPath(pixPath)) {
         if (scene()->sceneRect().contains(scenePos)) {
-            e->setDropAction(Qt::MoveAction); // 告诉源端扣数量
+            emit piecePlaced(pixPath, -1);
+            e->setDropAction(Qt::MoveAction);
             e->accept();
         } else {
-            e->ignore(); // 丢到棋盘外不消耗
+            e->ignore();
         }
         return;
     }

@@ -19,7 +19,7 @@ public:
 
 signals:
     void eventPiecePlaced(const QString& eventId, const QString& pixPath, int slotId);
-    void pieceDropped(UnitKind kind, Side side, int lvl, QString pixPath);
+    void piecePlaced(const QString& pixResPath, int slotId);
 
 protected:
     void wheelEvent(QWheelEvent *) override;

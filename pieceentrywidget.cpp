@@ -18,7 +18,7 @@ PieceEntryWidget::PieceEntryWidget(const QIcon& icon, const QString& name, QWidg
     f.setBold(true);
     m_countLabel->setFont(f);
     m_countLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
-    m_countLabel->setMinimumWidth(50); // 右侧列宽，自己调
+    m_countLabel->setMinimumWidth(30); // 右侧列宽，自己调
 
     auto* lay = new QHBoxLayout(this);
     lay->setContentsMargins(6,4,6,4);
@@ -33,8 +33,12 @@ PieceEntryWidget::PieceEntryWidget(const QIcon& icon, const QString& name, QWidg
 void PieceEntryWidget::setCount(int c)
 {
     m_count = c;
-    m_countLabel->setText(QString("x %1").arg(qMax(0, c)));
-    setDisabledVisual(m_count <= 0);
+    const int v = qMax(0, c);
+
+    if (v <= 0) m_countLabel->clear();
+    else m_countLabel->setText(QString("x %1").arg(v));
+
+    setDisabledVisual(v <= 0);
 }
 
 void PieceEntryWidget::setDisabledVisual(bool dis)

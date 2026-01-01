@@ -10,7 +10,7 @@ class View : public QFrame
     Q_OBJECT
 public:
     explicit View(QWidget *parent = nullptr);
-    QGraphicsView *view() const;
+    GraphicsView *view() const;
 private:
     GraphicsView *graphicsView;
     QSlider *zoomSlider;

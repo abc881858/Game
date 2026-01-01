@@ -22,37 +22,8 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
 
-    QVBoxLayout *hostLayout = new QVBoxLayout(ui->dockWidget);
-    hostLayout->setContentsMargins(0,0,0,0);
-    hostLayout->setSpacing(0);
-
-    m_DockManager = new ads::CDockManager(ui->dockWidget);
-    hostLayout->addWidget(m_DockManager);
-
-    auto *centralDock = new ads::CDockWidget("场上");
-    View *view = new View;
-    centralDock->setWidget(view);
-    m_DockManager->setCentralWidget(centralDock);
-
-    // auto* extraDock = new ads::CDockWidget("轰炸");
-    // auto* extraWidget = new QWidget;
-    // extraDock->setWidget(extraWidget);
-    // m_DockManager->addDockWidget(ads::CenterDockWidgetArea, extraDock, centralDock->dockAreaWidget());
-    // centralDock->setAsCurrentTab();
-
-    auto *logDock = new ads::CDockWidget("日志");
-    logTextEdit = new QTextEdit;
-    logDock->setWidget(logTextEdit);
-    m_DockManager->addDockWidget(ads::BottomDockWidgetArea, logDock);
-    QAction *logAction = logDock->toggleViewAction();
-    logAction->setIcon(QIcon(":/res/log.png"));
-    logAction->setText("日志");
-    ui->menuView->addAction(logAction);
-    logDock->toggleView(false);
-
-    m_DockManager->setSplitterSizes(centralDock->dockAreaWidget(), {800, 200});
-
-    QActionGroup *actionGroup = new QActionGroup(this);
+    // ===== actions =====
+    auto *actionGroup = new QActionGroup(this);
     actionGroup->addAction(ui->action1);
     actionGroup->addAction(ui->action2);
     actionGroup->addAction(ui->action3);
@@ -60,48 +31,94 @@ MainWindow::MainWindow(QWidget *parent)
     actionGroup->addAction(ui->action5);
     actionGroup->addAction(ui->action6);
 
+    ui->D->setCurrentIndex(0);
+    ui->S->setCurrentIndex(0);
+
+    // ===== Dock host layout first =====
+    auto *hostLayout = new QVBoxLayout(ui->dockWidget);
+    hostLayout->setContentsMargins(0,0,0,0);
+    hostLayout->setSpacing(0);
+
+    // ===== Dock manager first (setupStatusDock needs it) =====
+    m_DockManager = new ads::CDockManager(ui->dockWidget);
+    hostLayout->addWidget(m_DockManager);
+
+    // ===== Central view + scene (setupReadyList needs scene) =====
+    View *view = new View;
+
+    scene = new QGraphicsScene(this);
+    scene->setSceneRect(0, 0, 3164, 4032);
+
+    auto *back_item = new QGraphicsPixmapItem(QPixmap::fromImage(QImage(":/res/back.png")));
+    back_item->setPos(0, 0);
+    back_item->setZValue(0);
+    scene->addItem(back_item);
+
+    view->view()->setScene(scene);
+
+    auto *centralDock = new ads::CDockWidget("场上");
+    centralDock->setWidget(view);
+    m_DockManager->setCentralWidget(centralDock);
+
+    // ===== Log dock =====
+    auto *logDock = new ads::CDockWidget("日志");
+    logTextEdit = new QTextEdit;
+    logDock->setWidget(logTextEdit);
+    m_DockManager->addDockWidget(ads::BottomDockWidgetArea, logDock);
+    m_DockManager->setSplitterSizes(centralDock->dockAreaWidget(), {800, 200});
+
+    QAction *logAction = logDock->toggleViewAction();
+    logAction->setIcon(QIcon(":/res/log.png"));
+    logAction->setText("日志");
+    ui->menuView->addAction(logAction);
+    logDock->toggleView(false);
+
+    // ===== Now safe to call (scene + dock manager already ready) =====
+    setupReadyList();
+    setupStatusDock();
+
+    // ===== action1 event-drop dialog =====
     connect(ui->action1, &QAction::triggered, this, [=](){
-        // 允许投放的苏联占领格 slotId
         QSet<int> allowed = { 2,3,4,5,6,7,8,9,10,11,12,13,16,17,18,19,20,22,23,24,25,26,27,28,31,32,33,34 };
 
-        // 开启事件投放限制
-        auto* gv = static_cast<GraphicsView*>(view->view()); // 你 view() 返回的是 QGraphicsView*
-        // 更稳妥：你可以在 View 提供 GraphicsView* getter；这里先按你当前结构强转
-        gv->setEventDropSlots(allowed);
+        view->view()->setEventDropSlots(allowed);
 
-        // 弹对话框
         auto* dlg = new EventDialog(this);
-        dlg->setEventId("SOV_RESERVE_3x4");          // 任意字符串即可区分事件
+        dlg->setEventId("SOV_RESERVE_3x4");
         dlg->addEventPiece("4级兵团", ":/S/S_4JBT.png", 3);
 
-        // drop 成功 -> 对话框删一个
-        connect(gv, &GraphicsView::eventPiecePlaced, dlg, &EventDialog::onEventPiecePlaced);
+        connect(view->view(), &GraphicsView::eventPiecePlaced, dlg, &EventDialog::onEventPiecePlaced);
 
-        // 对话框关闭后，关闭事件投放限制（避免影响其他拖拽）
         connect(dlg, &QDialog::finished, this, [=](int){
-            gv->clearEventDropSlots();
+            view->view()->clearEventDropSlots();
             dlg->deleteLater();
         });
 
         dlg->show();
     });
 
+    // ===== 普通落子：苏联大行动签 -> 苏联行动点+6 =====
+    connect(view->view(), &GraphicsView::piecePlaced, this,
+            [=](const QString& pixResPath, int /*slotId*/){
 
-    ui->D->setCurrentIndex(0);
-    ui->S->setCurrentIndex(0);
+        // 只处理行动签
+        if (!pixResPath.contains("_XDQ", Qt::CaseSensitive))
+            return;
 
-    QGraphicsPixmapItem *back_item = new QGraphicsPixmapItem(QPixmap::fromImage(QImage(":/res/back.png")));
-    back_item->setPos(0, 0);
-    back_item->setZValue(0);
+        // 阵营
+        Side side = Side::Unknown;
+        if (pixResPath.startsWith(":/D/")) side = Side::D;
+        else if (pixResPath.startsWith(":/S/")) side = Side::S;
+        if (side == Side::Unknown) return;
 
-    scene = new QGraphicsScene(this);
-    scene->setSceneRect(0, 0, 3164, 4032);
-    scene->addItem(back_item);
+        // 点数（2 或 6）
+        int ap = 0;
+        if (pixResPath.contains("XDQ2")) ap = 2;
+        else if (pixResPath.contains("XDQ6")) ap = 6;
+        if (ap == 0) return;
 
-    view->view()->setScene(scene);
-
-    setupReadyList();
-    setupStatusDock();
+        addActionPoints(side, ap);
+    });
 }
 
 MainWindow::~MainWindow()
