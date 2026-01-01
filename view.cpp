@@ -4,8 +4,9 @@
 #include <QtMath>
 
 View::View(QWidget *parent)
-    : QWidget{parent}
+    : QFrame{parent}
 {
+    setFrameStyle(Sunken | StyledPanel);
     graphicsView = new GraphicsView(this);
     // graphicsView->setRenderHint(QPainter::Antialiasing, false);
     // graphicsView->setViewport(new QGLWidget(QGLFormat(QGL::SampleBuffers)) : new QWidget);

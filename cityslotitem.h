@@ -17,6 +17,7 @@ public:
         setPos(slotRect.topLeft());
         // setPen(QPen(Qt::red, 3));
         // setBrush(QColor(255,0,0,40));
+        setPen(QPen(Qt::NoPen));
         setBrush(Qt::transparent);
         setZValue(1);
         setFlag(QGraphicsItem::ItemIsMovable, false);

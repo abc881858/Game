@@ -1,10 +1,22 @@
 #include "pieceitem.h"
 #include "cityslotitem.h"
-
 #include <QGraphicsScene>
 #include <QGraphicsSceneMouseEvent>
 #include <QLineF>
 #include <QtMath>
+#include <QMenu>
+#include <QGraphicsSceneContextMenuEvent>
+
+static QVector<QPair<int,int>> splitOptions(int level)
+{
+    // 返回 (a,b) 表示 level -> a + b
+    switch (level) {
+    case 4: return { {2,2}, {1,3} };
+    case 3: return { {1,2} };
+    case 2: return { {1,1} };
+    default: return {};
+    }
+}
 
 static QVector<QPointF> makeOffsets(int n, qreal w, qreal h, qreal gap)
 {
@@ -181,4 +193,75 @@ void PieceItem::placeToSlot(CitySlotItem* slot)
 
     m_lastValidSlotId = m_slotId;
     m_lastValidPos = pos();
+}
+
+void PieceItem::contextMenuEvent(QGraphicsSceneContextMenuEvent* e)
+{
+    if (m_kind != UnitKind::Corps) {
+        QGraphicsPixmapItem::contextMenuEvent(e);
+        return;
+    }
+
+    if(m_level < 2) {
+        QGraphicsPixmapItem::contextMenuEvent(e);
+        return;
+    }
+
+    if(m_slotId < 0) {
+        QGraphicsPixmapItem::contextMenuEvent(e);
+        return;
+    }
+
+    QGraphicsScene* sc = scene();
+    if (!sc) { e->ignore(); return; }
+
+    // ✅ 先把所在城市 slot 指针找出来并缓存（非常关键）
+    CitySlotItem* slotPtr = nullptr;
+    for (auto* it : sc->items()) {
+        if (it->type() != CitySlotType) continue;
+        auto* s = static_cast<CitySlotItem*>(it);
+        if (s->id() == m_slotId) { slotPtr = s; break; }
+    }
+    if (!slotPtr) { e->ignore(); return; }
+
+    QMenu menu;
+    auto opts = splitOptions(m_level);
+    for (auto [a,b] : opts) {
+        auto* act = menu.addAction(
+            QString("%1级兵团 分成 %2级兵团 + %3级兵团").arg(m_level).arg(a).arg(b)
+        );
+        act->setData(QString("%1,%2").arg(a).arg(b));
+    }
+
+    QAction* chosen = menu.exec(e->screenPos());
+    if (!chosen) return;
+
+    const auto parts = chosen->data().toString().split(',');
+    if (parts.size() != 2) return;
+    const int a = parts[0].toInt();
+    const int b = parts[1].toInt();
+
+    // ✅ 缓存拆分需要的数据（删除 this 之后不能再用成员）
+    const Side side = m_side;
+
+    // ✅ 先把自己从 scene 移除再 delete（更稳）
+    sc->removeItem(this);
+    delete this; // ⚠️ 从这里开始绝对不能再用 this
+
+    auto spawnOne = [&](int lvl){
+        const QString path = corpsPixPath(side, lvl);
+        QPixmap pm(path);
+        if (pm.isNull()) return;
+
+        auto* ni = new PieceItem(pm);
+        ni->setUnitMeta(UnitKind::Corps, side, lvl, path);
+        ni->setZValue(20);
+        sc->addItem(ni);
+
+        // ✅ 用缓存的 slotPtr 放入同城并重排
+        ni->placeToSlot(slotPtr);
+    };
+
+    spawnOne(a);
+    spawnOne(b);
 }

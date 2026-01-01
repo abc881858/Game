@@ -10,6 +10,7 @@
 #include <QGraphicsPixmapItem>
 #include "pieceitem.h"
 #include "cityslotitem.h"
+#include "util.h"
 
 GraphicsView::GraphicsView(View *v) : QGraphicsView(), view(v)
 {
@@ -161,6 +162,13 @@ void GraphicsView::dropEvent(QDropEvent *e)
 
     // 创建棋子并强制入城
     auto *item = new PieceItem(pm);
+    Side side;
+    int lvl;
+    if (parseCorpsFromPixPath(pixPath, side, lvl)) {
+        item->setUnitMeta(UnitKind::Corps, side, lvl, pixPath);
+    } else {
+        item->setUnitMeta(UnitKind::Other, Side::Unknown, 0, pixPath);
+    }
     item->setZValue(20);
     scene()->addItem(item);
 

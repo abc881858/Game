@@ -1,11 +1,11 @@
 #pragma once
 
-#include <QWidget>
+#include <QFrame>
 #include <QSlider>
 #include <QToolButton>
 #include "graphicsview.h"
 
-class View : public QWidget
+class View : public QFrame
 {
     Q_OBJECT
 public:

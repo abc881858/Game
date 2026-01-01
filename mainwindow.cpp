@@ -9,10 +9,12 @@
 #include <QPixmap>
 #include <QActionGroup>
 #include "piecelistwidget.h"
-#include <QLabel>
+#include <QTextEdit>
 #include <QTimer>
 #include "view.h"
 #include "eventdialog.h"
+#include "util.h"
+#include <QRandomGenerator>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -27,17 +29,31 @@ MainWindow::MainWindow(QWidget *parent)
     m_DockManager = new ads::CDockManager(ui->dockWidget);
     hostLayout->addWidget(m_DockManager);
 
-    auto *centralDock = new ads::CDockWidget("Center");
+    auto *centralDock = new ads::CDockWidget("场上");
     View *view = new View;
     centralDock->setWidget(view);
     m_DockManager->setCentralWidget(centralDock);
 
-    // auto *topDock = new ads::CDockWidget("Label 1");
-    // QLabel *l = new QLabel("Lorem ipsum...");
-    // l->setWordWrap(true);
-    // topDock->setWidget(l);
-    // ui->menuView->addAction(topDock->toggleViewAction());
-    // m_DockManager->addDockWidget(ads::TopDockWidgetArea, topDock);
+    auto* extraDock = new ads::CDockWidget("轰炸");
+    auto* extraWidget = new QWidget;
+    extraDock->setWidget(extraWidget);
+    m_DockManager->addDockWidget(ads::CenterDockWidgetArea, extraDock, centralDock->dockAreaWidget());
+
+    centralDock->setAsCurrentTab();
+
+    auto *logDock = new ads::CDockWidget("日志");
+    logTextEdit = new QTextEdit;
+    logDock->setWidget(logTextEdit);
+    m_DockManager->addDockWidget(ads::BottomDockWidgetArea, logDock);
+
+    QAction *logAction = logDock->toggleViewAction();
+    logAction->setIcon(QIcon(":/res/log.png"));
+    logAction->setText("日志");
+    ui->menuView->addAction(logAction);
+
+    logDock->toggleView(false);
+
+    m_DockManager->setSplitterSizes(centralDock->dockAreaWidget(), {800, 200});
 
     QActionGroup *actionGroup = new QActionGroup(this);
     actionGroup->addAction(ui->action1);
@@ -112,17 +128,24 @@ void MainWindow::addPieceS(const QString& name, const QString& pixResPath)
 PieceItem* MainWindow::spawnPieceToCity(int slotId, const QString& pixResPath, qreal z)
 {
     if (!scene) return nullptr;
-
     CitySlotItem* slot = m_slots.value(slotId, nullptr);
     if (!slot) return nullptr;
 
     QPixmap pm(pixResPath);
     if (pm.isNull()) return nullptr;
 
-    PieceItem* p = new PieceItem(pm);
+    auto* p = new PieceItem(pm);
     p->setZValue(z);
     scene->addItem(p);
     p->placeToSlot(slot);
+
+    Side side;
+    int lvl;
+    if (parseCorpsFromPixPath(pixResPath, side, lvl)) {
+        p->setUnitMeta(UnitKind::Corps, side, lvl, pixResPath);
+    } else {
+        p->setUnitMeta(UnitKind::Other, Side::Unknown, 0, pixResPath);
+    }
     return p;
 }
 
@@ -291,5 +314,30 @@ void MainWindow::setupReadyList()
     spawnPieceToCity(30, ":/D/D_4JBT.png");//罗马尼亚
     spawnPieceToCity(31, ":/S/S_F4.png");//克里米亚
     spawnPieceToCity(34, ":/S/S_3JBT.png");//巴库
+}
 
+void MainWindow::on_action_DTZ_triggered()
+{
+    int num = QRandomGenerator::global()->bounded(1, 7);
+
+    QTextCharFormat fmt;
+    fmt.setForeground(QBrush(Qt::black));
+
+    QTextCursor cursor = logTextEdit->textCursor();
+    cursor.movePosition(QTextCursor::End);
+    cursor.insertText(QString("德国掷骰子：%1\n").arg(num), fmt);
+    logTextEdit->setTextCursor(cursor);
+}
+
+void MainWindow::on_action_STZ_triggered()
+{
+    int num = QRandomGenerator::global()->bounded(1, 7);
+
+    QTextCharFormat fmt;
+    fmt.setForeground(QBrush(QColor(183,100,50)));
+
+    QTextCursor cursor = logTextEdit->textCursor();
+    cursor.movePosition(QTextCursor::End);
+    cursor.insertText(QString("苏联掷骰子：%1\n").arg(num), fmt);
+    logTextEdit->setTextCursor(cursor);
 }

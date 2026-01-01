@@ -15,8 +15,8 @@
   </property>
   <property name="iconSize">
    <size>
-    <width>64</width>
-    <height>64</height>
+    <width>36</width>
+    <height>36</height>
    </size>
   </property>
   <property name="toolButtonStyle">
@@ -53,7 +53,7 @@
          <x>0</x>
          <y>0</y>
          <width>200</width>
-         <height>832</height>
+         <height>823</height>
         </rect>
        </property>
        <attribute name="label">
@@ -66,7 +66,7 @@
          <x>0</x>
          <y>0</y>
          <width>200</width>
-         <height>832</height>
+         <height>823</height>
         </rect>
        </property>
        <attribute name="label">
@@ -79,7 +79,7 @@
          <x>0</x>
          <y>0</y>
          <width>200</width>
-         <height>832</height>
+         <height>823</height>
         </rect>
        </property>
        <attribute name="label">
@@ -120,7 +120,7 @@
          <x>0</x>
          <y>0</y>
          <width>200</width>
-         <height>832</height>
+         <height>823</height>
         </rect>
        </property>
        <attribute name="label">
@@ -133,7 +133,7 @@
          <x>0</x>
          <y>0</y>
          <width>200</width>
-         <height>832</height>
+         <height>823</height>
         </rect>
        </property>
        <attribute name="label">
@@ -146,7 +146,7 @@
          <x>0</x>
          <y>0</y>
          <width>200</width>
-         <height>832</height>
+         <height>823</height>
         </rect>
        </property>
        <attribute name="label">
@@ -163,8 +163,13 @@
      <x>0</x>
      <y>0</y>
      <width>1920</width>
-     <height>21</height>
+     <height>30</height>
     </rect>
+   </property>
+   <property name="font">
+    <font>
+     <pointsize>14</pointsize>
+    </font>
    </property>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
@@ -206,6 +211,11 @@
    <addaction name="action6"/>
   </widget>
   <widget class="QToolBar" name="menuView">
+   <property name="font">
+    <font>
+     <pointsize>14</pointsize>
+    </font>
+   </property>
    <property name="windowTitle">
     <string>toolBar_2</string>
    </property>
@@ -224,6 +234,8 @@
    <attribute name="toolBarBreak">
     <bool>false</bool>
    </attribute>
+   <addaction name="action_DTZ"/>
+   <addaction name="action_STZ"/>
   </widget>
   <action name="action1">
    <property name="checkable">
@@ -325,6 +337,36 @@
    </property>
    <property name="toolTip">
     <string>国力步骤</string>
+   </property>
+   <property name="menuRole">
+    <enum>QAction::MenuRole::NoRole</enum>
+   </property>
+  </action>
+  <action name="action_DTZ">
+   <property name="icon">
+    <iconset resource="res.qrc">
+     <normaloff>:/res/D_TZ.png</normaloff>:/res/D_TZ.png</iconset>
+   </property>
+   <property name="text">
+    <string>德国掷骰</string>
+   </property>
+   <property name="toolTip">
+    <string>德国掷骰</string>
+   </property>
+   <property name="menuRole">
+    <enum>QAction::MenuRole::NoRole</enum>
+   </property>
+  </action>
+  <action name="action_STZ">
+   <property name="icon">
+    <iconset resource="res.qrc">
+     <normaloff>:/res/S_TZ.png</normaloff>:/res/S_TZ.png</iconset>
+   </property>
+   <property name="text">
+    <string>苏联掷骰</string>
+   </property>
+   <property name="toolTip">
+    <string>苏联掷骰</string>
    </property>
    <property name="menuRole">
     <enum>QAction::MenuRole::NoRole</enum>
