@@ -7,14 +7,5 @@
         <file>res/log.png</file>
         <file>res/D_TZ.png</file>
         <file>res/S_TZ.png</file>
-        <file>res/dice/dice_ani_2453.bmp</file>
-        <file>res/dice/dice_ani_5621.bmp</file>
-        <file>res/dice/dice_decide1.bmp</file>
-        <file>res/dice/dice_decide2.bmp</file>
-        <file>res/dice/dice_decide3.bmp</file>
-        <file>res/dice/dice_decide4.bmp</file>
-        <file>res/dice/dice_decide5.bmp</file>
-        <file>res/dice/dice_decide6.bmp</file>
-        <file>res/dice/dice_random.bmp</file>
     </qresource>
 </RCC>
