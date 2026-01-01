@@ -12,6 +12,11 @@
 #include "cityslotitem.h"
 #include "util.h"
 
+inline bool isActionTokenPath(const QString& pixPath)
+{
+    return pixPath.contains("_XDQ", Qt::CaseSensitive);
+}
+
 GraphicsView::GraphicsView(View *v) : QGraphicsView(), view(v)
 {
     setAcceptDrops(true);
@@ -130,7 +135,6 @@ void GraphicsView::dropEvent(QDropEvent *e)
     if (isNormal) {
         pixPath = QString::fromUtf8(e->mimeData()->data("application/x-piece"));
     } else {
-        // payload: eventId|pixPath
         const QString payload = QString::fromUtf8(e->mimeData()->data("application/x-event-piece"));
         const auto parts = payload.split('|');
         if (parts.size() != 2) { e->ignore(); return; }
@@ -143,7 +147,19 @@ void GraphicsView::dropEvent(QDropEvent *e)
 
     QPointF scenePos = mapToScene(e->position().toPoint());
 
-    // 点命中找城市
+    // ✅ 行动签：只要 drop 到棋盘（sceneRect）就消耗，不需要城市格
+    if (isNormal && isActionTokenPath(pixPath)) {
+        if (scene()->sceneRect().contains(scenePos)) {
+            e->setDropAction(Qt::MoveAction); // 告诉源端扣数量
+            e->accept();
+        } else {
+            e->ignore(); // 丢到棋盘外不消耗
+        }
+        return;
+    }
+
+    // ====== 下面保持你原来的逻辑：必须命中城市格 ======
+
     CitySlotItem* hitSlot = nullptr;
     const auto hitItems = scene()->items(scenePos, Qt::IntersectsItemShape, Qt::DescendingOrder);
     for (auto* it : hitItems) {
@@ -155,12 +171,10 @@ void GraphicsView::dropEvent(QDropEvent *e)
 
     if (!hitSlot) { e->ignore(); return; }
 
-    // ✅ 事件投放：只能放在允许的苏联占领格
     if (isEvent) {
         if (!eventAllowedSlotIds.contains(hitSlot->id())) { e->ignore(); return; }
     }
 
-    // 创建棋子并强制入城
     auto *item = new PieceItem(pm);
     Side side;
     int lvl;
@@ -175,12 +189,10 @@ void GraphicsView::dropEvent(QDropEvent *e)
     item->setPos(scenePos - item->boundingRect().center());
     item->placeToSlot(hitSlot);
 
-    // ✅ 告诉对话框：事件兵已成功落子
     if (isEvent) {
         emit eventPiecePlaced(eventId, pixPath, hitSlot->id());
     }
 
-    // ✅ 告诉源端：这次 drop 成功（用于待命区 count--）
     e->setDropAction(Qt::MoveAction);
     e->accept();
 }

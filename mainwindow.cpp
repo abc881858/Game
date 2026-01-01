@@ -17,11 +17,6 @@
 #include <QRandomGenerator>
 #include "pieceentrywidget.h"
 
-// inline bool isActionTokenPath(const QString& pixPath)
-// {
-//     return pixPath.contains("_XDQ", Qt::CaseSensitive);
-// }
-
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
