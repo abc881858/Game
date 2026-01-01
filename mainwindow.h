@@ -6,6 +6,7 @@
 #include "piecelistwidget.h"
 #include <QHash>
 #include <QLabel>
+#include "util.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -36,4 +37,43 @@ private:
     QHash<int, CitySlotItem*> m_slots;
     PieceItem* spawnPieceToCity(int slotId, const QString& pixResPath, qreal z = 20);
     QTextEdit *logTextEdit;
+private:
+    // ===== 状态数值 =====
+    int m_turn = 1;            // 回合 1-8
+
+    int m_npD = 0;             // 德国国力
+    int m_oilD = 0;            // 德国石油
+    int m_apD  = 0;            // 德国行动点（你已有）
+    int m_rpD  = 0;            // 德国准备点
+
+    int m_npS = 0;             // 苏联国力
+    int m_oilS = 0;            // 苏联石油
+    int m_apS  = 0;            // 苏联行动点（你已有）
+    int m_rpS  = 0;            // 苏联准备点
+
+    // ===== 状态显示控件 =====
+    QLabel* m_turnLabel = nullptr;
+
+    QLabel* m_npLabelD = nullptr;
+    QLabel* m_oilLabelD = nullptr;
+    QLabel* m_apLabelD = nullptr;
+    QLabel* m_rpLabelD = nullptr;
+
+    QLabel* m_npLabelS = nullptr;
+    QLabel* m_oilLabelS = nullptr;
+    QLabel* m_apLabelS = nullptr;
+    QLabel* m_rpLabelS = nullptr;
+
+    void setupStatusDock();          // 创建 dock
+
+public:
+    void addTurn(int delta);
+    void addNationalPower(Side side, int delta);
+    void addOil(Side side, int delta);
+    void addActionPoints(Side side, int delta);  // 加/扣行动点
+    void addReadyPoints(Side side, int delta);
+    void refreshStatusUI();
+
+public slots:
+
 };

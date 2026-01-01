@@ -2,6 +2,7 @@
 
 #include <QGraphicsView>
 #include <QSet>
+#include "util.h"
 
 class View;
 class QRubberBand;
@@ -18,6 +19,7 @@ public:
 
 signals:
     void eventPiecePlaced(const QString& eventId, const QString& pixPath, int slotId);
+    void pieceDropped(UnitKind kind, Side side, int lvl, QString pixPath);
 
 protected:
     void wheelEvent(QWheelEvent *) override;

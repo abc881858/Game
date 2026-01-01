@@ -13,7 +13,6 @@
 #include <QTimer>
 #include "view.h"
 #include "eventdialog.h"
-#include "util.h"
 #include <QRandomGenerator>
 #include "pieceentrywidget.h"
 
@@ -35,23 +34,20 @@ MainWindow::MainWindow(QWidget *parent)
     centralDock->setWidget(view);
     m_DockManager->setCentralWidget(centralDock);
 
-    auto* extraDock = new ads::CDockWidget("轰炸");
-    auto* extraWidget = new QWidget;
-    extraDock->setWidget(extraWidget);
-    m_DockManager->addDockWidget(ads::CenterDockWidgetArea, extraDock, centralDock->dockAreaWidget());
-
-    centralDock->setAsCurrentTab();
+    // auto* extraDock = new ads::CDockWidget("轰炸");
+    // auto* extraWidget = new QWidget;
+    // extraDock->setWidget(extraWidget);
+    // m_DockManager->addDockWidget(ads::CenterDockWidgetArea, extraDock, centralDock->dockAreaWidget());
+    // centralDock->setAsCurrentTab();
 
     auto *logDock = new ads::CDockWidget("日志");
     logTextEdit = new QTextEdit;
     logDock->setWidget(logTextEdit);
     m_DockManager->addDockWidget(ads::BottomDockWidgetArea, logDock);
-
     QAction *logAction = logDock->toggleViewAction();
     logAction->setIcon(QIcon(":/res/log.png"));
     logAction->setText("日志");
     ui->menuView->addAction(logAction);
-
     logDock->toggleView(false);
 
     m_DockManager->setSplitterSizes(centralDock->dockAreaWidget(), {800, 200});
@@ -105,6 +101,7 @@ MainWindow::MainWindow(QWidget *parent)
     view->view()->setScene(scene);
 
     setupReadyList();
+    setupStatusDock();
 }
 
 MainWindow::~MainWindow()
@@ -359,4 +356,142 @@ void MainWindow::addPieceS(const QString& name, const QString& pixResPath, int c
     auto* w = new PieceEntryWidget(QIcon(pixResPath), name, pieceListWidget_S);
     w->setCount(count);
     pieceListWidget_S->setItemWidget(it, w);
+}
+
+void MainWindow::setupStatusDock()
+{
+    auto *statusDock = new ads::CDockWidget("状态");
+    auto *w = new QWidget;
+    statusDock->setWidget(w);
+
+    auto *grid = new QGridLayout(w);
+    grid->setContentsMargins(8, 8, 8, 8);
+    grid->setHorizontalSpacing(12);
+    grid->setVerticalSpacing(6);
+
+    // ===== 左侧：回合（单独一列）=====
+    auto *lbTurn = new QLabel("回合");
+    m_turnLabel = new QLabel("1");
+
+    lbTurn->setAlignment(Qt::AlignCenter);
+    m_turnLabel->setAlignment(Qt::AlignCenter);
+
+    // 放在第0列，跨多行（0~2行：表头+德国+苏联）
+    grid->addWidget(lbTurn, 0, 0, 1, 1);
+    grid->addWidget(m_turnLabel, 1, 0, 2, 1);
+
+    // ===== 表头：指标列 =====
+    grid->addWidget(new QLabel(""), 0, 1);  // 行标题占位
+    grid->addWidget(new QLabel("国力"), 0, 2);
+    grid->addWidget(new QLabel("石油"), 0, 3);
+    grid->addWidget(new QLabel("行动点"), 0, 4);
+    grid->addWidget(new QLabel("准备点"), 0, 5);
+
+    // ===== 德国行 =====
+    auto* headD = new QLabel("德国");
+    m_npLabelD  = new QLabel("0");
+    m_oilLabelD = new QLabel("0");
+    m_apLabelD  = new QLabel("0");
+    m_rpLabelD  = new QLabel("0");
+
+    grid->addWidget(headD, 1, 1);
+    grid->addWidget(m_npLabelD, 1, 2);
+    grid->addWidget(m_oilLabelD, 1, 3);
+    grid->addWidget(m_apLabelD, 1, 4);
+    grid->addWidget(m_rpLabelD, 1, 5);
+
+    // ===== 苏联行 =====
+    auto* headS = new QLabel("苏联");
+    m_npLabelS  = new QLabel("0");
+    m_oilLabelS = new QLabel("0");
+    m_apLabelS  = new QLabel("0");
+    m_rpLabelS  = new QLabel("0");
+
+    grid->addWidget(headS, 2, 1);
+    grid->addWidget(m_npLabelS, 2, 2);
+    grid->addWidget(m_oilLabelS, 2, 3);
+    grid->addWidget(m_apLabelS, 2, 4);
+    grid->addWidget(m_rpLabelS, 2, 5);
+
+    m_DockManager->addDockWidget(ads::TopDockWidgetArea, statusDock);
+
+    refreshStatusUI();
+
+    QAction *apAction = statusDock->toggleViewAction();
+    apAction->setIcon(QIcon(":/res/status.png"));
+    apAction->setText("状态");
+    ui->menuView->addAction(apAction);
+
+    statusDock->toggleView(false);
+}
+
+void MainWindow::refreshStatusUI()
+{
+    if (m_turnLabel) m_turnLabel->setText(QString::number(m_turn));
+
+    if (m_npLabelD)  m_npLabelD->setText(QString::number(m_npD));
+    if (m_npLabelS)  m_npLabelS->setText(QString::number(m_npS));
+
+    if (m_oilLabelD) m_oilLabelD->setText(QString::number(m_oilD));
+    if (m_oilLabelS) m_oilLabelS->setText(QString::number(m_oilS));
+
+    if (m_apLabelD)  m_apLabelD->setText(QString::number(m_apD));
+    if (m_apLabelS)  m_apLabelS->setText(QString::number(m_apS));
+
+    if (m_rpLabelD)  m_rpLabelD->setText(QString::number(m_rpD));
+    if (m_rpLabelS)  m_rpLabelS->setText(QString::number(m_rpS));
+}
+
+void MainWindow::addTurn(int delta)
+{
+    m_turn += delta;
+    refreshStatusUI();
+}
+
+void MainWindow::addNationalPower(Side side, int delta)
+{
+    if (side == Side::D) m_npD += delta;
+    else if (side == Side::S) m_npS += delta;
+    refreshStatusUI();
+}
+
+void MainWindow::addOil(Side side, int delta)
+{
+    if (side == Side::D) m_oilD += delta;
+    else if (side == Side::S) m_oilS += delta;
+    refreshStatusUI();
+}
+
+void MainWindow::addActionPoints(Side side, int delta)
+{
+    if (side == Side::D) m_apD += delta;
+    else if (side == Side::S) m_apS += delta;
+
+    if (m_apLabelD) m_apLabelD->setText(QString::number(m_apD));
+    if (m_apLabelS) m_apLabelS->setText(QString::number(m_apS));
+
+    // 顺便写日志（可选）
+    QTextCharFormat fmt;
+    fmt.setForeground(QBrush(Qt::black));
+    QTextCursor cursor = logTextEdit->textCursor();
+    cursor.movePosition(QTextCursor::End);
+
+    const QString who = (side == Side::D ? "德国" : "苏联");
+    cursor.insertText(QString("%1行动点 %2%3，当前：D=%4 S=%5\n")
+        .arg(who)
+        .arg(delta >= 0 ? "+" : "")
+        .arg(delta)
+        .arg(m_apD)
+        .arg(m_apS), fmt);
+
+    logTextEdit->setTextCursor(cursor);
+
+    refreshStatusUI();
+}
+
+void MainWindow::addReadyPoints(Side side, int delta)
+{
+    if (side == Side::D) m_rpD += delta;
+    else if (side == Side::S) m_rpS += delta;
+    refreshStatusUI();
 }

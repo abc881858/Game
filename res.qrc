@@ -7,5 +7,6 @@
         <file>res/log.png</file>
         <file>res/D_TZ.png</file>
         <file>res/S_TZ.png</file>
+        <file>res/status.png</file>
     </qresource>
 </RCC>
