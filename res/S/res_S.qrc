@@ -1,0 +1,39 @@
+<RCC>
+    <qresource prefix="/S">
+        <file>S_1JBT.png</file>
+        <file>S_1JHJ.png</file>
+        <file>S_1JHK.png</file>
+        <file>S_2JBT.png</file>
+        <file>S_2JHJ.png</file>
+        <file>S_2JHK.png</file>
+        <file>S_3JBT.png</file>
+        <file>S_4JBT.png</file>
+        <file>S_B002.png</file>
+        <file>S_B002~.png</file>
+        <file>S_B003.png</file>
+        <file>S_C101.png</file>
+        <file>S_D1.png</file>
+        <file>S_D2T.png</file>
+        <file>S_D3T.png</file>
+        <file>S_D1201.png</file>
+        <file>S_D1302.png</file>
+        <file>S_D2302.png</file>
+        <file>S_E121.png</file>
+        <file>S_E131.png</file>
+        <file>S_F1.png</file>
+        <file>S_F2.png</file>
+        <file>S_F3.png</file>
+        <file>S_F4.png</file>
+        <file>S_H3.png</file>
+        <file>S_H4.png</file>
+        <file>S_I6.png</file>
+        <file>S_J3.png</file>
+        <file>S_J3~.png</file>
+        <file>S_JRHKB.png</file>
+        <file>S_JRHKB~.png</file>
+        <file>S_JRZJB.png</file>
+        <file>S_JRZJB~.png</file>
+        <file>S_ZH.png</file>
+        <file>S_ZL.png</file>
+    </qresource>
+</RCC>

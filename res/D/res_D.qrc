@@ -1,0 +1,46 @@
+<RCC>
+    <qresource prefix="/D">
+        <file>D_1JBT.png</file>
+        <file>D_1JHJ.png</file>
+        <file>D_1JHK.png</file>
+        <file>D_2JBT.png</file>
+        <file>D_2JHJ.png</file>
+        <file>D_2JHK.png</file>
+        <file>D_3JBT.png</file>
+        <file>D_4JBT.png</file>
+        <file>D_B002.png</file>
+        <file>D_B103.png</file>
+        <file>D_C102.png</file>
+        <file>D_D4T.png</file>
+        <file>D_D57.png</file>
+        <file>D_D1002.png</file>
+        <file>D_D1502.png</file>
+        <file>D_D2102.png</file>
+        <file>D_D2304.png</file>
+        <file>D_D3402.png</file>
+        <file>D_DJ2.png</file>
+        <file>D_E131.png</file>
+        <file>D_E141.png</file>
+        <file>D_F131.png</file>
+        <file>D_G6.png</file>
+        <file>D_H3.png</file>
+        <file>D_H4.png</file>
+        <file>D_HI3T.png</file>
+        <file>D_HI4T.png</file>
+        <file>D_I3.png</file>
+        <file>D_I4.png</file>
+        <file>D_I5.png</file>
+        <file>D_J3.png</file>
+        <file>D_J25.png</file>
+        <file>D_JRHKB.png</file>
+        <file>D_JRHKB~.png</file>
+        <file>D_JRQTB.png</file>
+        <file>D_JRQTB~.png</file>
+        <file>D_JRZDB.png</file>
+        <file>D_JRZDB~.png</file>
+        <file>D_JRZJB.png</file>
+        <file>D_JRZJB~.png</file>
+        <file>D_ZH.png</file>
+        <file>D_ZL.png</file>
+    </qresource>
+</RCC>
