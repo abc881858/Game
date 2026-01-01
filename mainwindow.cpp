@@ -15,6 +15,12 @@
 #include "eventdialog.h"
 #include "util.h"
 #include <QRandomGenerator>
+#include "pieceentrywidget.h"
+
+// inline bool isActionTokenPath(const QString& pixPath)
+// {
+//     return pixPath.contains("_XDQ", Qt::CaseSensitive);
+// }
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -111,20 +117,6 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
-void MainWindow::addPieceD(const QString& name, const QString& pixResPath)
-{
-    QListWidgetItem *it = new QListWidgetItem(QIcon(pixResPath), name);
-    it->setData(Qt::UserRole, pixResPath);
-    pieceListWidget_D->addItem(it);
-}
-
-void MainWindow::addPieceS(const QString& name, const QString& pixResPath)
-{
-    QListWidgetItem *it = new QListWidgetItem(QIcon(pixResPath), name);
-    it->setData(Qt::UserRole, pixResPath);
-    pieceListWidget_S->addItem(it);
-}
-
 PieceItem* MainWindow::spawnPieceToCity(int slotId, const QString& pixResPath, qreal z)
 {
     if (!scene) return nullptr;
@@ -208,46 +200,48 @@ void MainWindow::setupReadyList()
     layout_D->setContentsMargins(4,4,4,4);
     layout_D->addWidget(pieceListWidget_D);
 
-    addPieceD("1级兵团",":/D/D_1JBT.png");
-    addPieceD("2级兵团",":/D/D_2JBT.png");
-    addPieceD("3级兵团",":/D/D_3JBT.png");
-    addPieceD("4级兵团",":/D/D_4JBT.png");
-    addPieceD("1级兵团",":/L/L_1JBT.png");
-    addPieceD("2级兵团",":/L/L_2JBT.png");
-    addPieceD("3级兵团",":/L/L_3JBT.png");
-    addPieceD("4级兵团",":/L/L_4JBT.png");
-    addPieceD("1级海军",":/D/D_1JHJ.png");
-    addPieceD("2级海军",":/D/D_2JHJ.png");
-    addPieceD("1级航空",":/D/D_1JHK.png");
-    addPieceD("2级航空",":/D/D_2JHK.png");
-    addPieceD("Bf-109",":/D/D_B002.png");
-    addPieceD("Fw-190A百舌鸟",":/D/D_B103.png");
-    addPieceD("Bf-110破坏者",":/D/D_C102.png");
-    addPieceD("Hs-129B-2",":/D/D_D4T.png");
-    addPieceD("Ju-87 斯图卡",":/D/D_D57.png");
-    addPieceD("He-111P",":/D/D_D1002.png");
-    addPieceD("He-111H6",":/D/D_D1502.png");
-    addPieceD("Do-17Z",":/D/D_D2102.png");
-    addPieceD("Do-217",":/D/D_D2304.png");
-    addPieceD("Ju-88A",":/D/D_D3402.png");
-    addPieceD("潜艇舰队",":/D/D_DJ2.png");
-    addPieceD("战列巡洋舰队+++",":/D/D_E131.png");
-    addPieceD("战列舰队+++",":/D/D_E141.png");
-    addPieceD("重巡舰队+++",":/D/D_F131.png");
-    addPieceD("PzVI 虎I",":/D/D_G6.png");
-    addPieceD("PzIIIJ 三号J",":/D/D_H3.png");
-    addPieceD("PzIVG 四号G",":/D/D_H4.png");
-    addPieceD("StuGIIIF 三突F",":/D/D_HI3T.png");
-    addPieceD("StuGIIIG 三突G",":/D/D_HI4T.png");
-    addPieceD("PzIII 三号",":/D/D_I3.png");
-    addPieceD("PzIV 四号",":/D/D_I4.png");
-    addPieceD("PzIIIN 三号N",":/D/D_I5.png");
-    addPieceD("Pz38(t)",":/D/D_J3.png");
-    addPieceD("装甲步兵41",":/D/D_J25.png");
-    addPieceD("精锐航空兵",":/D/D_JRHKB.png");
-    addPieceD("精锐潜艇兵",":/D/D_JRQTB.png");
-    addPieceD("精锐掷弹兵",":/D/D_JRZDB.png");
-    addPieceD("精锐装甲兵",":/D/D_JRZJB.png");
+    addPieceD("德国大行动签",":/D/D_XDQ6.png", 1);
+    addPieceD("德国小行动签",":/D/D_XDQ2.png", 1);
+    addPieceD("1级兵团",":/D/D_1JBT.png", 0);
+    addPieceD("2级兵团",":/D/D_2JBT.png", 0);
+    addPieceD("3级兵团",":/D/D_3JBT.png", 0);
+    addPieceD("4级兵团",":/D/D_4JBT.png", 0);
+    addPieceD("1级兵团",":/L/L_1JBT.png", 0);
+    addPieceD("2级兵团",":/L/L_2JBT.png", 0);
+    addPieceD("3级兵团",":/L/L_3JBT.png", 0);
+    addPieceD("4级兵团",":/L/L_4JBT.png", 0);
+    addPieceD("1级海军",":/D/D_1JHJ.png", 0);
+    addPieceD("2级海军",":/D/D_2JHJ.png", 0);
+    addPieceD("1级航空",":/D/D_1JHK.png", 0);
+    addPieceD("2级航空",":/D/D_2JHK.png", 0);
+    addPieceD("Bf-109",":/D/D_B002.png", 5);
+    addPieceD("Fw-190A 百舌鸟",":/D/D_B103.png", 0);
+    addPieceD("Bf-110 破坏者",":/D/D_C102.png", 1);
+    addPieceD("Hs-129B-2",":/D/D_D4T.png", 0);
+    addPieceD("Ju-87 斯图卡",":/D/D_D57.png", 0);
+    addPieceD("He-111P",":/D/D_D1002.png", 0);
+    addPieceD("He-111H6",":/D/D_D1502.png", 0);
+    addPieceD("Do-17Z",":/D/D_D2102.png", 0);
+    addPieceD("Do-217",":/D/D_D2304.png", 0);
+    addPieceD("Ju-88A",":/D/D_D3402.png", 0);
+    addPieceD("潜艇舰队",":/D/D_DJ2.png", 0);
+    addPieceD("战列巡洋舰队+++",":/D/D_E131.png", 0);
+    addPieceD("战列舰队+++",":/D/D_E141.png", 0);
+    addPieceD("重巡舰队+++",":/D/D_F131.png", 0);
+    addPieceD("PzVI 虎I",":/D/D_G6.png", 0);
+    addPieceD("PzIIIJ 三号J",":/D/D_H3.png", 0);
+    addPieceD("PzIVG 四号G",":/D/D_H4.png", 0);
+    addPieceD("StuGIIIF 三突F",":/D/D_HI3T.png", 0);
+    addPieceD("StuGIIIG 三突G",":/D/D_HI4T.png", 0);
+    addPieceD("PzIII 三号",":/D/D_I3.png", 1);
+    addPieceD("PzIV 四号",":/D/D_I4.png", 0);
+    addPieceD("PzIIIN 三号N",":/D/D_I5.png", 0);
+    addPieceD("Pz38(t)",":/D/D_J3.png", 0);
+    addPieceD("装甲步兵41",":/D/D_J25.png", 0);
+    addPieceD("精锐航空兵",":/D/D_JRHKB.png", 1);
+    addPieceD("精锐潜艇兵",":/D/D_JRQTB.png", 0);
+    addPieceD("精锐掷弹兵",":/D/D_JRZDB.png", 0);
+    addPieceD("精锐装甲兵",":/D/D_JRZJB.png", 4);
 
     pieceListWidget_S = new PieceListWidget(ui->S_DMQ);
     pieceListWidget_S->setViewMode(QListView::IconMode);
@@ -262,33 +256,35 @@ void MainWindow::setupReadyList()
     layout_S->setContentsMargins(4,4,4,4);
     layout_S->addWidget(pieceListWidget_S);
 
-    addPieceS("1级兵团",":/S/S_1JBT.png");
-    addPieceS("2级兵团",":/S/S_2JBT.png");
-    addPieceS("3级兵团",":/S/S_3JBT.png");
-    addPieceS("4级兵团",":/S/S_4JBT.png");
-    addPieceS("1级海军",":/S/S_1JHJ.png");
-    addPieceS("2级海军",":/S/S_2JHJ.png");
-    addPieceS("1级航空",":/S/S_1JHK.png");
-    addPieceS("2级航空",":/S/S_2JHK.png");
-    addPieceS("雅克-1",":/S/S_B002.png");
-    addPieceS("米格-3",":/S/S_B002~.png");
-    addPieceS("雅克-9",":/S/S_B003.png");
-    addPieceS("伊-16",":/S/S_C101.png");
-    addPieceS("斯勃-2",":/S/S_D1.png");
-    addPieceS("伊尔-2",":/S/S_D2T.png");
-    addPieceS("伊尔-2M",":/S/S_D3T.png");
-    addPieceS("德勃-3",":/S/S_D1201.png");
-    addPieceS("伊尔-4",":/S/S_D1302.png");
-    addPieceS("佩-2",":/S/S_D2302.png");
-    addPieceS("战列舰队++",":/S/S_E121.png");
-    addPieceS("战列舰队++",":/S/S_E131.png");
-    addPieceS("KV-1",":/S/S_H3.png");
-    addPieceS("T-34/76",":/S/S_H4.png");
-    addPieceS("KV-2",":/S/S_I6.png");
-    addPieceS("BT-7",":/S/S_J3.png");
-    addPieceS("T-70",":/S/S_J3~.png");
-    addPieceD("精锐航空兵",":/S/S_JRHKB.png");
-    addPieceD("精锐装甲兵",":/S/S_JRZJB.png");
+    addPieceS("苏联大行动签",":/S/S_XDQ6.png", 1);
+    addPieceS("苏联小行动签",":/S/S_XDQ2.png", 1);
+    addPieceS("1级兵团",":/S/S_1JBT.png", 0);
+    addPieceS("2级兵团",":/S/S_2JBT.png", 0);
+    addPieceS("3级兵团",":/S/S_3JBT.png", 0);
+    addPieceS("4级兵团",":/S/S_4JBT.png", 0);
+    addPieceS("1级海军",":/S/S_1JHJ.png", 0);
+    addPieceS("2级海军",":/S/S_2JHJ.png", 0);
+    addPieceS("1级航空",":/S/S_1JHK.png", 0);
+    addPieceS("2级航空",":/S/S_2JHK.png", 0);
+    addPieceS("雅克-1",":/S/S_B002.png", 1);
+    addPieceS("米格-3",":/S/S_B002~.png", 4);
+    addPieceS("雅克-9",":/S/S_B003.png", 0);
+    addPieceS("伊-16",":/S/S_C101.png", 7);
+    addPieceS("斯勃-2",":/S/S_D1.png", 7);
+    addPieceS("伊尔-2",":/S/S_D2T.png", 1);
+    addPieceS("伊尔-2M",":/S/S_D3T.png", 0);
+    addPieceS("德勃-3",":/S/S_D1201.png", 1);
+    addPieceS("伊尔-4",":/S/S_D1302.png", 1);
+    addPieceS("佩-2",":/S/S_D2302.png", 1);
+    addPieceS("战列舰队++",":/S/S_E121.png", 0);
+    addPieceS("战列舰队++",":/S/S_E131.png", 0);
+    addPieceS("KV-1",":/S/S_H3.png", 0);
+    addPieceS("T-34/76",":/S/S_H4.png", 1);
+    addPieceS("KV-2",":/S/S_I6.png", 0);
+    addPieceS("BT-7",":/S/S_J3.png", 0);
+    addPieceS("T-70",":/S/S_J3~.png", 0);
+    addPieceS("精锐航空兵",":/S/S_JRHKB.png", 0);
+    addPieceS("精锐装甲兵",":/S/S_JRZJB.png", 0);
 
     // addPieceS("1级要塞",":/S/S_F1.png");
     // addPieceS("2级要塞",":/S/S_F2.png");
@@ -340,4 +336,32 @@ void MainWindow::on_action_STZ_triggered()
     cursor.movePosition(QTextCursor::End);
     cursor.insertText(QString("苏联掷骰子：%1\n").arg(num), fmt);
     logTextEdit->setTextCursor(cursor);
+}
+
+void MainWindow::addPieceD(const QString& name, const QString& pixResPath, int count)
+{
+    auto* it = new QListWidgetItem;
+    it->setSizeHint(QSize(220, 80));         // 控制每行高度/宽度
+    it->setData(Qt::UserRole, pixResPath);
+    it->setData(Qt::UserRole + 1, count);
+
+    pieceListWidget_D->addItem(it);
+
+    auto* w = new PieceEntryWidget(QIcon(pixResPath), name, pieceListWidget_D);
+    w->setCount(count);
+    pieceListWidget_D->setItemWidget(it, w);
+}
+
+void MainWindow::addPieceS(const QString& name, const QString& pixResPath, int count)
+{
+    auto* it = new QListWidgetItem;
+    it->setSizeHint(QSize(220, 80));
+    it->setData(Qt::UserRole, pixResPath);
+    it->setData(Qt::UserRole + 1, count);
+
+    pieceListWidget_S->addItem(it);
+
+    auto* w = new PieceEntryWidget(QIcon(pixResPath), name, pieceListWidget_S);
+    w->setCount(count);
+    pieceListWidget_S->setItemWidget(it, w);
 }

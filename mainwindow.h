@@ -22,10 +22,8 @@ public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
     void setupReadyList();
-    void addPieceD(const QString &name, const QString &pixResPath);
-    void addPieceS(const QString &name, const QString &pixResPath);
-    void rollDiceAnimated(const QString &who);
-    void onDiceAnimTick();
+    void addPieceD(const QString &name, const QString &pixResPath, int count);
+    void addPieceS(const QString &name, const QString &pixResPath, int count);
 private slots:
     void on_action_DTZ_triggered();
     void on_action_STZ_triggered();

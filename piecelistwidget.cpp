@@ -1,30 +1,51 @@
 #include "piecelistwidget.h"
 #include <QDrag>
 #include <QMimeData>
-#include <QPixmap>
+#include "pieceentrywidget.h"
 
 PieceListWidget::PieceListWidget(QWidget* parent) : QListWidget(parent)
 {
-    setDragEnabled(true);
 }
 
-void PieceListWidget::startDrag(Qt::DropActions supportedActions)
+void PieceListWidget::setItemCount(QListWidgetItem* it, int c)
 {
-    auto *it = currentItem();
+    if (!it) return;
+    it->setData(RoleCount, c);
+    // 触发重绘
+    viewport()->update(visualItemRect(it));
+}
+
+int PieceListWidget::itemCount(const QListWidgetItem* it) const
+{
+    if (!it) return 0;
+    return it->data(RoleCount).toInt();
+}
+
+void PieceListWidget::startDrag(Qt::DropActions)
+{
+    auto* it = currentItem();
     if (!it) return;
 
-    QString pixPath = it->data(Qt::UserRole).toString();
+    int count = it->data(Qt::UserRole + 1).toInt();
+    if (count <= 0) return;
 
-    auto *mime = new QMimeData;
-    mime->setData("application/x-piece", pixPath.toUtf8());
+    const QString pixPath = it->data(Qt::UserRole).toString();
+    if (pixPath.isEmpty()) return;
 
-    auto *drag = new QDrag(this);
+    auto* mime = new QMimeData;
+    mime->setData("application/x-piece", pixPath.toUtf8());   // ✅ 对齐 GraphicsView
+
+    auto* drag = new QDrag(this);
     drag->setMimeData(mime);
+    drag->setPixmap(QPixmap(pixPath).scaled(72,72, Qt::KeepAspectRatio, Qt::SmoothTransformation));
 
-    // 拖拽时的预览图
-    QPixmap pm(pixPath);
-    drag->setPixmap(pm.scaled(64,64, Qt::KeepAspectRatio, Qt::SmoothTransformation));
-    drag->setHotSpot(QPoint(drag->pixmap().width()/2, drag->pixmap().height()/2));
+    Qt::DropAction r = drag->exec(Qt::MoveAction, Qt::MoveAction);
+    if (r == Qt::MoveAction) {
+        int newCount = count - 1;
+        it->setData(Qt::UserRole + 1, newCount);
 
-    drag->exec(Qt::CopyAction);
+        if (auto* w = qobject_cast<PieceEntryWidget*>(itemWidget(it))) {
+            w->setCount(newCount);
+        }
+    }
 }

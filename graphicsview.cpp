@@ -94,7 +94,7 @@ void GraphicsView::dragEnterEvent(QDragEnterEvent *e)
 {
     if (e->mimeData()->hasFormat("application/x-piece") ||
         e->mimeData()->hasFormat("application/x-event-piece")) {
-        e->setDropAction(Qt::CopyAction);
+        e->setDropAction(Qt::MoveAction);
         e->accept();
         return;
     }
@@ -105,7 +105,7 @@ void GraphicsView::dragMoveEvent(QDragMoveEvent *e)
 {
     if (e->mimeData()->hasFormat("application/x-piece") ||
         e->mimeData()->hasFormat("application/x-event-piece")) {
-        e->setDropAction(Qt::CopyAction);
+        e->setDropAction(Qt::MoveAction);
         e->accept();
         return;
     }
@@ -180,7 +180,9 @@ void GraphicsView::dropEvent(QDropEvent *e)
         emit eventPiecePlaced(eventId, pixPath, hitSlot->id());
     }
 
-    e->acceptProposedAction();
+    // ✅ 告诉源端：这次 drop 成功（用于待命区 count--）
+    e->setDropAction(Qt::MoveAction);
+    e->accept();
 }
 
 void GraphicsView::dragLeaveEvent(QDragLeaveEvent *e)

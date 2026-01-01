@@ -8,6 +8,7 @@ SOURCES += \
     main.cpp \
     mainwindow.cpp \
     piececountdelegate.cpp \
+    pieceentrywidget.cpp \
     pieceitem.cpp \
     piecelistwidget.cpp \
     util.cpp \
@@ -19,6 +20,7 @@ HEADERS += \
     graphicsview.h \
     mainwindow.h \
     piececountdelegate.h \
+    pieceentrywidget.h \
     pieceitem.h \
     piecelistwidget.h \
     util.h \
