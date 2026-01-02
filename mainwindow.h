@@ -26,8 +26,7 @@ public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
-    void addPieceD(const QString &name, const QString &pixResPath, int count);
-    void addPieceS(const QString &name, const QString &pixResPath, int count);
+    void addPiece(PieceListWidget* list, const QString& name, const QString& pixResPath, int count);
     void addTurn(int delta);
     void addNationalPower(Side side, int delta);
     void addOil(Side side, int delta);

@@ -12,7 +12,6 @@ void PieceListWidget::setItemCount(QListWidgetItem* it, int c)
 {
     if (!it) return;
     it->setData(RoleCount, c);
-    // 触发重绘
     viewport()->update(visualItemRect(it));
 }
 

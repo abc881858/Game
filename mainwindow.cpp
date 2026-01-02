@@ -170,213 +170,6 @@ void MainWindow::initLogDock()
     logDock->toggleView(false);
 }
 
-void MainWindow::initEventActions()
-{
-    // action1：事件投放
-    connect(ui->action1, &QAction::triggered, this, [this](){
-        QSet<int> allowed = { 2,3,4,5,6,7,8,9,10,11,12,13,16,17,18,19,20,22,23,24,25,26,27,28,31,32,33,34 };
-        m_gameController->setEventAllowedRegions(allowed);
-
-        auto* dlg = new EventDialog(this);
-
-        connect(m_gameController, &GameController::eventPiecePlaced, dlg, &EventDialog::onEventPiecePlaced);
-
-        connect(dlg, &QDialog::finished, this, [this, dlg](int){
-            m_gameController->clearEventAllowedRegions();
-            dlg->deleteLater();
-        });
-
-        dlg->setEventId("SLYBD");//事件-苏联预备队
-        dlg->addEventPiece("4级兵团", ":/S/S_4JBT.png", 3);
-        dlg->show();
-    });
-}
-
-void MainWindow::initRegionItems()
-{
-    const auto regionRects = buildRegionRects();
-
-    for (int i = 0; i < regionRects.size(); ++i) {
-        auto *regionItem = new RegionItem(i, regionRects[i]);
-        scene->addItem(regionItem);
-        m_placementManager->addRegionItem(regionItem);
-    }
-}
-
-PieceListWidget* MainWindow::createPieceList(QWidget* host)
-{
-    auto *list = new PieceListWidget(host);
-    list->setViewMode(QListView::IconMode);
-    list->setIconSize(QSize(72,72));
-    list->setResizeMode(QListView::Adjust);
-    list->setMovement(QListView::Static);
-    list->setSpacing(8);
-    list->setDragEnabled(true);
-    list->setSelectionMode(QAbstractItemView::SingleSelection);
-
-    auto *layout = new QVBoxLayout(host);
-    layout->setContentsMargins(4,4,4,4);
-    layout->addWidget(list);
-
-    return list;
-}
-
-void MainWindow::initPieceLists()
-{
-    pieceListWidget_D = createPieceList(ui->D_DMQ);
-    pieceListWidget_S = createPieceList(ui->S_DMQ);
-
-    // ===== D pieces =====
-    addPieceD("德国大行动签",":/D/D_XDQ6.png", 1);
-    addPieceD("德国小行动签",":/D/D_XDQ2.png", 1);
-    addPieceD("1级兵团",":/D/D_1JBT.png", 0);
-    addPieceD("2级兵团",":/D/D_2JBT.png", 0);
-    addPieceD("3级兵团",":/D/D_3JBT.png", 0);
-    addPieceD("4级兵团",":/D/D_4JBT.png", 0);
-    addPieceD("1级兵团",":/L/L_1JBT.png", 0);
-    addPieceD("2级兵团",":/L/L_2JBT.png", 0);
-    addPieceD("3级兵团",":/L/L_3JBT.png", 0);
-    addPieceD("4级兵团",":/L/L_4JBT.png", 0);
-    addPieceD("1级海军",":/D/D_1JHJ.png", 0);
-    addPieceD("2级海军",":/D/D_2JHJ.png", 0);
-    addPieceD("1级航空",":/D/D_1JHK.png", 0);
-    addPieceD("2级航空",":/D/D_2JHK.png", 0);
-    addPieceD("Bf-109",":/D/D_B002.png", 5);
-    addPieceD("Fw-190A 百舌鸟",":/D/D_B103.png", 0);
-    addPieceD("Bf-110 破坏者",":/D/D_C102.png", 1);
-    addPieceD("Hs-129B-2",":/D/D_D4T.png", 0);
-    addPieceD("Ju-87 斯图卡",":/D/D_D57.png", 0);
-    addPieceD("He-111P",":/D/D_D1002.png", 0);
-    addPieceD("He-111H6",":/D/D_D1502.png", 0);
-    addPieceD("Do-17Z",":/D/D_D2102.png", 0);
-    addPieceD("Do-217",":/D/D_D2304.png", 0);
-    addPieceD("Ju-88A",":/D/D_D3402.png", 0);
-    addPieceD("潜艇舰队",":/D/D_DJ2.png", 0);
-    addPieceD("战列巡洋舰队+++",":/D/D_E131.png", 0);
-    addPieceD("战列舰队+++",":/D/D_E141.png", 0);
-    addPieceD("重巡舰队+++",":/D/D_F131.png", 0);
-    addPieceD("PzVI 虎I",":/D/D_G6.png", 0);
-    addPieceD("PzIIIJ 三号J",":/D/D_H3.png", 0);
-    addPieceD("PzIVG 四号G",":/D/D_H4.png", 0);
-    addPieceD("StuGIIIF 三突F",":/D/D_HI3T.png", 0);
-    addPieceD("StuGIIIG 三突G",":/D/D_HI4T.png", 0);
-    addPieceD("PzIII 三号",":/D/D_I3.png", 1);
-    addPieceD("PzIV 四号",":/D/D_I4.png", 0);
-    addPieceD("PzIIIN 三号N",":/D/D_I5.png", 0);
-    addPieceD("Pz38(t)",":/D/D_J3.png", 0);
-    addPieceD("装甲步兵41",":/D/D_J25.png", 0);
-    addPieceD("精锐航空兵",":/D/D_JRHKB.png", 1);
-    addPieceD("精锐潜艇兵",":/D/D_JRQTB.png", 0);
-    addPieceD("精锐掷弹兵",":/D/D_JRZDB.png", 0);
-    addPieceD("精锐装甲兵",":/D/D_JRZJB.png", 4);
-
-    // ===== S pieces =====
-    addPieceS("苏联大行动签",":/S/S_XDQ6.png", 1);
-    addPieceS("苏联小行动签",":/S/S_XDQ2.png", 1);
-    addPieceS("1级兵团",":/S/S_1JBT.png", 0);
-    addPieceS("2级兵团",":/S/S_2JBT.png", 0);
-    addPieceS("3级兵团",":/S/S_3JBT.png", 0);
-    addPieceS("4级兵团",":/S/S_4JBT.png", 0);
-    addPieceS("1级海军",":/S/S_1JHJ.png", 0);
-    addPieceS("2级海军",":/S/S_2JHJ.png", 0);
-    addPieceS("1级航空",":/S/S_1JHK.png", 0);
-    addPieceS("2级航空",":/S/S_2JHK.png", 0);
-    addPieceS("雅克-1",":/S/S_B002.png", 1);
-    addPieceS("米格-3",":/S/S_B002~.png", 4);
-    addPieceS("雅克-9",":/S/S_B003.png", 0);
-    addPieceS("伊-16",":/S/S_C101.png", 7);
-    addPieceS("斯勃-2",":/S/S_D1.png", 7);
-    addPieceS("伊尔-2",":/S/S_D2T.png", 1);
-    addPieceS("伊尔-2M",":/S/S_D3T.png", 0);
-    addPieceS("德勃-3",":/S/S_D1201.png", 1);
-    addPieceS("伊尔-4",":/S/S_D1302.png", 1);
-    addPieceS("佩-2",":/S/S_D2302.png", 1);
-    addPieceS("战列舰队++",":/S/S_E121.png", 0);
-    addPieceS("战列舰队++",":/S/S_E131.png", 0);
-    addPieceS("KV-1",":/S/S_H3.png", 0);
-    addPieceS("T-34/76",":/S/S_H4.png", 1);
-    addPieceS("KV-2",":/S/S_I6.png", 0);
-    addPieceS("BT-7",":/S/S_J3.png", 0);
-    addPieceS("T-70",":/S/S_J3~.png", 0);
-    addPieceS("精锐航空兵",":/S/S_JRHKB.png", 0);
-    addPieceS("精锐装甲兵",":/S/S_JRZJB.png", 0);
-
-    // 你原来注释掉的要塞，如需可以在这里加回
-    // addPieceS("1级要塞",":/S/S_F1.png", 0);
-}
-
-void MainWindow::initGameBoardPieces()
-{
-    auto spawn = [this](int rid, const QString& path, qreal z = 20.0){
-        if (!m_gameController) return;
-        m_gameController->placeNewPieceToRegion(rid, path, z);
-    };
-
-    spawn(1,  ":/D/D_2JBT.png"); // 挪威北部
-    spawn(2,  ":/S/S_2JBT.png"); // 摩尔曼斯克
-    spawn(6,  ":/S/S_F4.png");   // 列宁格勒
-    spawn(11, ":/D/D_4JBT.png"); // 波罗的海国家
-    spawn(11, ":/D/D_4JBT.png");
-    spawn(14, ":/D/D_4JBT.png"); // 东普鲁士
-    spawn(16, ":/D/D_4JBT.png"); // 白俄罗斯
-    spawn(16, ":/D/D_4JBT.png");
-    spawn(16, ":/D/D_2JBT.png");
-    spawn(21, ":/D/D_2JBT.png"); // 波兰南部
-    spawn(22, ":/D/D_4JBT.png"); // 利沃夫
-    spawn(22, ":/D/D_4JBT.png");
-    spawn(23, ":/S/S_4JBT.png"); // 基辅
-    spawn(28, ":/S/S_4JBT.png"); // 敖德萨
-    spawn(30, ":/L/L_4JBT.png"); // 罗马尼亚
-    spawn(30, ":/L/L_3JBT.png");
-    spawn(30, ":/D/D_4JBT.png");
-    spawn(31, ":/S/S_F4.png");   // 克里米亚
-    spawn(34, ":/S/S_3JBT.png"); // 巴库
-}
-
-// =====================================================
-// 逻辑函数
-// =====================================================
-
-void MainWindow::on_action_DTZ_triggered()
-{
-    int num = QRandomGenerator::global()->bounded(1, 7);
-    appendLog(QString("德国掷骰子：%1\n").arg(num), Qt::black, true);
-}
-
-void MainWindow::on_action_STZ_triggered()
-{
-    int num = QRandomGenerator::global()->bounded(1, 7);
-    appendLog(QString("苏联掷骰子：%1\n").arg(num), QColor(183,100,50), true);
-}
-
-void MainWindow::addPieceD(const QString& name, const QString& pixResPath, int count)
-{
-    auto* it = new QListWidgetItem;
-    it->setSizeHint(QSize(220, 80));
-    it->setData(Qt::UserRole, pixResPath);
-    it->setData(Qt::UserRole + 1, count);
-
-    pieceListWidget_D->addItem(it);
-
-    auto* w = new PieceEntryWidget(QIcon(pixResPath), name, pieceListWidget_D);
-    w->setCount(count);
-    pieceListWidget_D->setItemWidget(it, w);
-}
-
-void MainWindow::addPieceS(const QString& name, const QString& pixResPath, int count)
-{
-    auto* it = new QListWidgetItem;
-    it->setSizeHint(QSize(220, 80));
-    it->setData(Qt::UserRole, pixResPath);
-    it->setData(Qt::UserRole + 1, count);
-
-    pieceListWidget_S->addItem(it);
-
-    auto* w = new PieceEntryWidget(QIcon(pixResPath), name, pieceListWidget_S);
-    w->setCount(count);
-    pieceListWidget_S->setItemWidget(it, w);
-}
-
 // =====================================================
 // 状态 Dock
 // =====================================================
@@ -440,6 +233,180 @@ void MainWindow::initStatusDock()
     statusDock->toggleView(false);
 }
 
+void MainWindow::initRegionItems()
+{
+    const auto regionRects = buildRegionRects();
+
+    for (int i = 0; i < regionRects.size(); ++i) {
+        auto *regionItem = new RegionItem(i, regionRects[i]);
+        scene->addItem(regionItem);
+        m_placementManager->addRegionItem(regionItem);
+    }
+}
+
+PieceListWidget* MainWindow::createPieceList(QWidget* host)
+{
+    auto *list = new PieceListWidget(host);
+    list->setViewMode(QListView::IconMode);
+    list->setIconSize(QSize(72,72));
+    list->setResizeMode(QListView::Adjust);
+    list->setMovement(QListView::Static);
+    list->setSpacing(8);
+    list->setDragEnabled(true);
+    list->setSelectionMode(QAbstractItemView::SingleSelection);
+
+    auto *layout = new QVBoxLayout(host);
+    layout->setContentsMargins(4,4,4,4);
+    layout->addWidget(list);
+
+    return list;
+}
+
+void MainWindow::initPieceLists()
+{
+    pieceListWidget_D = createPieceList(ui->D_DMQ);
+    pieceListWidget_S = createPieceList(ui->S_DMQ);
+
+    using Def = std::tuple<const char*, const char*, int>;
+
+    const Def D[] = {
+        {"德国大行动签",":/D/D_XDQ6.png", 1},
+        {"德国小行动签",":/D/D_XDQ2.png", 1},
+        {"1级兵团",":/D/D_1JBT.png", 0},
+        {"2级兵团",":/D/D_2JBT.png", 0},
+        {"3级兵团",":/D/D_3JBT.png", 0},
+        {"4级兵团",":/D/D_4JBT.png", 0},
+        {"1级兵团",":/L/L_1JBT.png", 0},
+        {"2级兵团",":/L/L_2JBT.png", 0},
+        {"3级兵团",":/L/L_3JBT.png", 0},
+        {"4级兵团",":/L/L_4JBT.png", 0},
+        {"1级海军",":/D/D_1JHJ.png", 0},
+        {"2级海军",":/D/D_2JHJ.png", 0},
+        {"1级航空",":/D/D_1JHK.png", 0},
+        {"2级航空",":/D/D_2JHK.png", 0},
+        {"Bf-109",":/D/D_B002.png", 5},
+        {"Fw-190A 百舌鸟",":/D/D_B103.png", 0},
+        {"Bf-110 破坏者",":/D/D_C102.png", 1},
+        {"Hs-129B-2",":/D/D_D4T.png", 0},
+        {"Ju-87 斯图卡",":/D/D_D57.png", 0},
+        {"He-111P",":/D/D_D1002.png", 0},
+        {"He-111H6",":/D/D_D1502.png", 0},
+        {"Do-17Z",":/D/D_D2102.png", 0},
+        {"Do-217",":/D/D_D2304.png", 0},
+        {"Ju-88A",":/D/D_D3402.png", 0},
+        {"潜艇舰队",":/D/D_DJ2.png", 0},
+        {"战列巡洋舰队+++",":/D/D_E131.png", 0},
+        {"战列舰队+++",":/D/D_E141.png", 0},
+        {"重巡舰队+++",":/D/D_F131.png", 0},
+        {"PzVI 虎I",":/D/D_G6.png", 0},
+        {"PzIIIJ 三号J",":/D/D_H3.png", 0},
+        {"PzIVG 四号G",":/D/D_H4.png", 0},
+        {"StuGIIIF 三突F",":/D/D_HI3T.png", 0},
+        {"StuGIIIG 三突G",":/D/D_HI4T.png", 0},
+        {"PzIII 三号",":/D/D_I3.png", 1},
+        {"PzIV 四号",":/D/D_I4.png", 0},
+        {"PzIIIN 三号N",":/D/D_I5.png", 0},
+        {"Pz38(t)",":/D/D_J3.png", 0},
+        {"装甲步兵41",":/D/D_J25.png", 0},
+        {"精锐航空兵",":/D/D_JRHKB.png", 1},
+        {"精锐潜艇兵",":/D/D_JRQTB.png", 0},
+        {"精锐掷弹兵",":/D/D_JRZDB.png", 0},
+        {"精锐装甲兵",":/D/D_JRZJB.png", 4},
+    };
+
+    const Def S[] = {
+        {"苏联大行动签",":/S/S_XDQ6.png", 1},
+        {"苏联小行动签",":/S/S_XDQ2.png", 1},
+        {"1级兵团",":/S/S_1JBT.png", 0},
+        {"2级兵团",":/S/S_2JBT.png", 0},
+        {"3级兵团",":/S/S_3JBT.png", 0},
+        {"4级兵团",":/S/S_4JBT.png", 0},
+        {"1级海军",":/S/S_1JHJ.png", 0},
+        {"2级海军",":/S/S_2JHJ.png", 0},
+        {"1级航空",":/S/S_1JHK.png", 0},
+        {"2级航空",":/S/S_2JHK.png", 0},
+        {"雅克-1",":/S/S_B002.png", 1},
+        {"米格-3",":/S/S_B002~.png", 4},
+        {"雅克-9",":/S/S_B003.png", 0},
+        {"伊-16",":/S/S_C101.png", 7},
+        {"斯勃-2",":/S/S_D1.png", 7},
+        {"伊尔-2",":/S/S_D2T.png", 1},
+        {"伊尔-2M",":/S/S_D3T.png", 0},
+        {"德勃-3",":/S/S_D1201.png", 1},
+        {"伊尔-4",":/S/S_D1302.png", 1},
+        {"佩-2",":/S/S_D2302.png", 1},
+        {"战列舰队++",":/S/S_E121.png", 0},
+        {"战列舰队++",":/S/S_E131.png", 0},
+        {"KV-1",":/S/S_H3.png", 0},
+        {"T-34/76",":/S/S_H4.png", 1},
+        {"KV-2",":/S/S_I6.png", 0},
+        {"BT-7",":/S/S_J3.png", 0},
+        {"T-70",":/S/S_J3~.png", 0},
+        {"精锐航空兵",":/S/S_JRHKB.png", 0},
+        {"精锐装甲兵",":/S/S_JRZJB.png", 0},
+    };
+
+    auto addAll = [this](PieceListWidget* list, const Def* arr, int n){
+        for (int i = 0; i < n; ++i) {
+            const auto& [name, path, cnt] = arr[i];
+            addPiece(list, QString::fromUtf8(name), QString::fromUtf8(path), cnt);
+        }
+    };
+
+    addAll(pieceListWidget_D, D, int(std::size(D)));
+    addAll(pieceListWidget_S, S, int(std::size(S)));
+}
+
+void MainWindow::initGameBoardPieces()
+{
+    auto spawn = [this](int rid, const QString& path, qreal z = 20.0){
+        if (!m_gameController) return;
+        m_gameController->placeNewPieceToRegion(rid, path, z);
+    };
+
+    spawn(1,  ":/D/D_2JBT.png"); // 挪威北部
+    spawn(2,  ":/S/S_2JBT.png"); // 摩尔曼斯克
+    spawn(6,  ":/S/S_F4.png");   // 列宁格勒
+    spawn(11, ":/D/D_4JBT.png"); // 波罗的海国家
+    spawn(11, ":/D/D_4JBT.png");
+    spawn(14, ":/D/D_4JBT.png"); // 东普鲁士
+    spawn(16, ":/D/D_4JBT.png"); // 白俄罗斯
+    spawn(16, ":/D/D_4JBT.png");
+    spawn(16, ":/D/D_2JBT.png");
+    spawn(21, ":/D/D_2JBT.png"); // 波兰南部
+    spawn(22, ":/D/D_4JBT.png"); // 利沃夫
+    spawn(22, ":/D/D_4JBT.png");
+    spawn(23, ":/S/S_4JBT.png"); // 基辅
+    spawn(28, ":/S/S_4JBT.png"); // 敖德萨
+    spawn(30, ":/L/L_4JBT.png"); // 罗马尼亚
+    spawn(30, ":/L/L_3JBT.png");
+    spawn(30, ":/D/D_4JBT.png");
+    spawn(31, ":/S/S_F4.png");   // 克里米亚
+    spawn(34, ":/S/S_3JBT.png"); // 巴库
+}
+
+void MainWindow::initEventActions()
+{
+    // action1：事件投放
+    connect(ui->action1, &QAction::triggered, this, [this](){
+        QSet<int> allowed = { 2,3,4,5,6,7,8,9,10,11,12,13,16,17,18,19,20,22,23,24,25,26,27,28,31,32,33,34 };
+        m_gameController->setEventAllowedRegions(allowed);
+
+        auto* dlg = new EventDialog(this);
+
+        connect(m_gameController, &GameController::eventPiecePlaced, dlg, &EventDialog::onEventPiecePlaced);
+
+        connect(dlg, &QDialog::finished, this, [this, dlg](int){
+            m_gameController->clearEventAllowedRegions();
+            dlg->deleteLater();
+        });
+
+        dlg->setEventId("SLYBD");//事件-苏联预备队
+        dlg->addEventPiece("4级兵团", ":/S/S_4JBT.png", 3);
+        dlg->show();
+    });
+}
+
 void MainWindow::refreshStatusUI()
 {
     if (m_turnLabel) m_turnLabel->setText(QString::number(m_turn));
@@ -455,6 +422,41 @@ void MainWindow::refreshStatusUI()
 
     if (m_rpLabelD)  m_rpLabelD->setText(QString::number(m_rpD));
     if (m_rpLabelS)  m_rpLabelS->setText(QString::number(m_rpS));
+}
+
+// =====================================================
+// 逻辑函数
+// =====================================================
+
+void MainWindow::on_action_DTZ_triggered()
+{
+    int num = QRandomGenerator::global()->bounded(1, 7);
+    appendLog(QString("德国掷骰子：%1\n").arg(num), Qt::black, true);
+}
+
+void MainWindow::on_action_STZ_triggered()
+{
+    int num = QRandomGenerator::global()->bounded(1, 7);
+    appendLog(QString("苏联掷骰子：%1\n").arg(num), QColor(183,100,50), true);
+}
+
+void MainWindow::addPiece(PieceListWidget* list,
+                          const QString& name,
+                          const QString& pixResPath,
+                          int count)
+{
+    if (!list) return;
+
+    auto* it = new QListWidgetItem;
+    it->setSizeHint(QSize(220, 80));
+    it->setData(Qt::UserRole, pixResPath);
+    it->setData(Qt::UserRole + 1, count);
+
+    list->addItem(it);
+
+    auto* w = new PieceEntryWidget(QIcon(pixResPath), name, list);
+    w->setCount(count);
+    list->setItemWidget(it, w);
 }
 
 void MainWindow::addTurn(int delta)
