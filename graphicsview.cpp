@@ -1,23 +1,29 @@
 #include "graphicsview.h"
+
 #include <QWheelEvent>
 #include <QMouseEvent>
 #include <QRubberBand>
 #include <QDebug>
-#include "graphicsframe.h"
+
 #include <QDragEnterEvent>
 #include <QDropEvent>
-#include <QMimeData>
 #include <QGraphicsPixmapItem>
+
+#include "graphicsframe.h"
 #include "pieceitem.h"
 #include "cityslotitem.h"
 #include "util.h"
+#include "dragdrop.h"
+#include "slotmanager.h"
 
 inline bool isActionTokenPath(const QString& pixPath)
 {
     return pixPath.contains("_XDQ", Qt::CaseSensitive);
 }
 
-GraphicsView::GraphicsView(GraphicsFrame *graphicsFrame) : QGraphicsView(), m_graphicsFrame(graphicsFrame)
+GraphicsView::GraphicsView(GraphicsFrame *graphicsFrame)
+    : QGraphicsView()
+    , m_graphicsFrame(graphicsFrame)
 {
     setAcceptDrops(true);
     viewport()->setAcceptDrops(true);
@@ -97,8 +103,8 @@ void GraphicsView::mouseReleaseEvent(QMouseEvent *e)
 
 void GraphicsView::dragEnterEvent(QDragEnterEvent *e)
 {
-    if (e->mimeData()->hasFormat("application/x-piece") ||
-        e->mimeData()->hasFormat("application/x-event-piece")) {
+    if (e->mimeData()->hasFormat(DragDrop::MimePiece) ||
+        e->mimeData()->hasFormat(DragDrop::MimeEventPiece)) {
         e->setDropAction(Qt::MoveAction);
         e->accept();
         return;
@@ -108,8 +114,8 @@ void GraphicsView::dragEnterEvent(QDragEnterEvent *e)
 
 void GraphicsView::dragMoveEvent(QDragMoveEvent *e)
 {
-    if (e->mimeData()->hasFormat("application/x-piece") ||
-        e->mimeData()->hasFormat("application/x-event-piece")) {
+    if (e->mimeData()->hasFormat(DragDrop::MimePiece) ||
+        e->mimeData()->hasFormat(DragDrop::MimeEventPiece)) {
         e->setDropAction(Qt::MoveAction);
         e->accept();
         return;
@@ -117,39 +123,43 @@ void GraphicsView::dragMoveEvent(QDragMoveEvent *e)
     QGraphicsView::dragMoveEvent(e);
 }
 
+void GraphicsView::dragLeaveEvent(QDragLeaveEvent *e)
+{
+    // 不交给 QGraphicsView 默认实现（它会在 enter/leave 不配对时 qWarning）
+    e->accept();
+}
+
 void GraphicsView::dropEvent(QDropEvent *e)
 {
     if (!scene()) { QGraphicsView::dropEvent(e); return; }
 
-    const bool isNormal = e->mimeData()->hasFormat("application/x-piece");
-    const bool isEvent  = e->mimeData()->hasFormat("application/x-event-piece");
+    const bool isNormal = e->mimeData()->hasFormat(DragDrop::MimePiece);
+    const bool isEvent  = e->mimeData()->hasFormat(DragDrop::MimeEventPiece);
 
     if (!isNormal && !isEvent) {
         QGraphicsView::dropEvent(e);
         return;
     }
 
-    QString pixPath;
-    QString eventId;
-
+    QString pixPath, eventId;
     if (isNormal) {
-        pixPath = QString::fromUtf8(e->mimeData()->data("application/x-piece"));
+        pixPath = QString::fromUtf8(e->mimeData()->data(DragDrop::MimePiece));
     } else {
-        const QString payload = QString::fromUtf8(e->mimeData()->data("application/x-event-piece"));
-        const auto parts = payload.split('|');
-        if (parts.size() != 2) { e->ignore(); return; }
-        eventId = parts[0];
-        pixPath = parts[1];
+        const QString payload = QString::fromUtf8(e->mimeData()->data(DragDrop::MimeEventPiece));
+        if (!DragDrop::unpackEventPiece(payload, eventId, pixPath)) {
+            e->ignore();
+            return;
+        }
     }
 
-    QPixmap pm(pixPath);
-    if (pm.isNull()) { e->ignore(); return; }
+    if (pixPath.isEmpty()) { e->ignore(); return; }
 
-    QPointF scenePos = mapToScene(e->position().toPoint());
+    const QPointF scenePos = mapToScene(e->position().toPoint());
 
-    if (isNormal && isActionTokenPath(pixPath)) {
+    // 1) 行动签：不需要命中城市格
+    if (isNormal && pixPath.contains("_XDQ", Qt::CaseSensitive)) {
         if (scene()->sceneRect().contains(scenePos)) {
-            emit piecePlaced(pixPath, -1);
+            emit actionTokenDropped(pixPath);
             e->setDropAction(Qt::MoveAction);
             e->accept();
         } else {
@@ -158,49 +168,14 @@ void GraphicsView::dropEvent(QDropEvent *e)
         return;
     }
 
-    // ====== 下面保持你原来的逻辑：必须命中城市格 ======
+    // 2) 普通棋子/事件棋子：必须命中 slot
+    if (!m_slotMgr) { e->ignore(); return; }
 
-    CitySlotItem* hitSlot = nullptr;
-    const auto hitItems = scene()->items(scenePos, Qt::IntersectsItemShape, Qt::DescendingOrder);
-    for (auto* it : hitItems) {
-        if (it->type() == CitySlotType) {
-            hitSlot = static_cast<CitySlotItem*>(it);
-            break;
-        }
-    }
+    const int slotId = m_slotMgr->hitTestSlotId(scenePos);
+    if (slotId < 0) { e->ignore(); return; }
 
-    if (!hitSlot) { e->ignore(); return; }
-
-    if (isEvent) {
-        if (!eventAllowedSlotIds.contains(hitSlot->id())) { e->ignore(); return; }
-    }
-
-    auto *item = new PieceItem(pm);
-    QObject::connect(item, &PieceItem::movedCityToCity, this, &GraphicsView::pieceMovedCityToCity);
-
-    Side side;
-    int lvl;
-    if (parseCorpsFromPixPath(pixPath, side, lvl)) {
-        item->setUnitMeta(UnitKind::Corps, side, lvl, pixPath);
-    } else {
-        item->setUnitMeta(UnitKind::Other, Side::Unknown, 0, pixPath);
-    }
-    item->setZValue(20);
-    scene()->addItem(item);
-
-    item->setPos(scenePos - item->boundingRect().center());
-    item->placeToSlot(hitSlot);
-
-    if (isEvent) {
-        emit eventPiecePlaced(eventId, pixPath, hitSlot->id());
-    }
+    emit pieceDropped(pixPath, eventId, slotId, isEvent);
 
     e->setDropAction(Qt::MoveAction);
-    e->accept();
-}
-
-void GraphicsView::dragLeaveEvent(QDragLeaveEvent *e)
-{
-    // 不交给 QGraphicsView 默认实现（它会在 enter/leave 不配对时 qWarning）
     e->accept();
 }

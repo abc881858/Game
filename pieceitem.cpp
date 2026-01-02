@@ -74,47 +74,32 @@ void PieceItem::mouseReleaseEvent(QGraphicsSceneMouseEvent* e)
     if (!m_inLayout) snapToNearestCity();
 }
 
-void PieceItem::snapToNearestCity()
-{
-    if (!scene()) return;
+void PieceItem::snapToNearestCity() {
+    if (!scene() || !m_slots) return;
 
-    QPointF pieceCenter = mapToScene(boundingRect().center());
+    const QPointF center = mapToScene(boundingRect().center());
+    const int hitId = m_slots->hitTestSlotId(center);
 
-    QRectF searchRect(pieceCenter - QPointF(snapRadius, snapRadius), QSizeF(snapRadius * 2, snapRadius * 2));
-
-    auto nearby = scene()->items(searchRect, Qt::IntersectsItemShape);
-
-    CitySlotItem* best = nullptr;
-    qreal bestDist = 1e18;
-    for (auto* it : nearby) {
-        if (it->type() != CitySlotType) continue;
-        auto* slot = static_cast<CitySlotItem*>(it);
-        qreal d = QLineF(pieceCenter, slot->centerScene()).length();
-        if (d < bestDist) { bestDist = d; best = slot; }
-    }
-
-    // ❌ 松手不在任何城市：回到上一次有效位置（等于不能放到非城市）
-    if (!best || bestDist > snapRadius) {
-        if (m_lastValidSlotId != -1) {
-            m_inLayout = true;
+    if (hitId < 0) {
+        // 回滚到上次有效位置
+        if (m_lastValidSlotId >= 0) {
+            setInLayout(true);
             setPos(m_lastValidPos);
-            m_inLayout = false;
-
-            // 让原城市队形恢复（防止你拖动时把队形弄乱）
-            // 找到 oldSlot 并重排（你之前那套遍历找 slot 的方法可复用）
-            CitySlotItem* oldSlot = nullptr;
-            for (auto* it : scene()->items()) {
-                if (it->type() != CitySlotType) continue;
-                auto* s = static_cast<CitySlotItem*>(it);
-                if (s->id() == m_lastValidSlotId) { oldSlot = s; break; }
-            }
-            if (oldSlot) relayoutSlot(oldSlot);
+            setInLayout(false);
+            m_slots->relayout(m_lastValidSlotId);
         }
         return;
     }
 
-    // ✅ 命中城市：统一交给 placeToSlot 做归属/重排/扣点触发
-    placeToSlot(best);
+    const int oldId = m_slotId;
+    m_slots->movePieceToSlot(this, hitId);
+
+    m_lastValidSlotId = hitId;
+    m_lastValidPos = pos();
+
+    if (oldId >= 0 && oldId != hitId) {
+        emit movedCityToCity(oldId, hitId, m_side);
+    }
 }
 
 void PieceItem::relayoutSlot(CitySlotItem* slot)
@@ -156,42 +141,6 @@ void PieceItem::relayoutSlot(CitySlotItem* slot)
         p->setZValue(20 + i * 0.1);
 
         p->m_inLayout = false;
-    }
-}
-
-void PieceItem::placeToSlot(CitySlotItem* newSlot)
-{
-    if (!newSlot || !scene()) return;
-
-    const int oldId = m_slotId;
-    const int newId = newSlot->id();
-
-    // 先更新归属
-    m_slot = newSlot;
-    m_slotId = newId;
-
-    // 如果换城，先重排旧城（避免旧城队形乱）
-    if (oldId != -1 && oldId != newId) {
-        CitySlotItem* oldSlotPtr = nullptr;
-        for (auto* it : scene()->items()) {
-            if (it->type() != CitySlotType) continue;
-            auto* s = static_cast<CitySlotItem*>(it);
-            if (s->id() == oldId) { oldSlotPtr = s; break; }
-        }
-        if (oldSlotPtr) relayoutSlot(oldSlotPtr);
-    }
-
-    // 重排新城（会把自己也排好位置）
-    relayoutSlot(newSlot);
-
-    // 记录有效落点
-    m_lastValidSlotId = m_slotId;
-    m_lastValidPos = pos();
-
-    // ✅ 触发移动信号
-    if (oldId != -1 && oldId != newId) {
-        qDebug() << "movedCityToCity" << oldId << newId << int(m_side);
-        emit movedCityToCity(oldId, newId, m_side);
     }
 }
 
@@ -241,27 +190,5 @@ void PieceItem::contextMenuEvent(QGraphicsSceneContextMenuEvent* e)
     const int a = parts[0].toInt();
     const int b = parts[1].toInt();
 
-    // ✅ 缓存拆分需要的数据（删除 this 之后不能再用成员）
-    const Side side = m_side;
-
-    // ✅ 先把自己从 scene 移除再 delete（更稳）
-    sc->removeItem(this);
-    delete this; // ⚠️ 从这里开始绝对不能再用 this
-
-    auto spawnOne = [&](int lvl){
-        const QString path = corpsPixPath(side, lvl);
-        QPixmap pm(path);
-        if (pm.isNull()) return;
-
-        auto* ni = new PieceItem(pm);
-        ni->setUnitMeta(UnitKind::Corps, side, lvl, path);
-        ni->setZValue(20);
-        sc->addItem(ni);
-
-        // ✅ 用缓存的 slotPtr 放入同城并重排
-        ni->placeToSlot(slotPtr);
-    };
-
-    spawnOne(a);
-    spawnOne(b);
+    emit splitRequested(this, a, b);
 }

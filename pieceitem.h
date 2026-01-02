@@ -3,6 +3,7 @@
 #include <QObject>
 #include <QGraphicsPixmapItem>
 #include "util.h"
+#include "slotmanager.h"
 
 inline constexpr int PieceType = QGraphicsItem::UserType + 200;
 
@@ -31,7 +32,10 @@ public:
     int slotId() const { return m_slotId; }
     void setSlotId(int id) { m_slotId = id; }
     void snapToNearestCity();
-    void placeToSlot(class CitySlotItem* slot);
+
+    void setSlotManager(SlotManager* mgr) { m_slots = mgr; }
+    SlotManager* slotManager() const { return m_slots; }
+    void markLastValid(int slotId) { m_lastValidSlotId = slotId; m_lastValidPos = pos(); }
 
 protected:
     void mouseReleaseEvent(QGraphicsSceneMouseEvent* e) override;
@@ -55,6 +59,15 @@ private:
     CitySlotItem* m_slot = nullptr; // 当前所在格（没有则 nullptr）
     Side m_side = Side::Unknown;    // 你 setUnitMeta 时保存的阵营
 
+    SlotManager* m_slots = nullptr;
+
+public:
+    void setInLayout(bool v) { m_inLayout = v; }
+    bool inLayout() const { return m_inLayout; }
+
 signals:
     void movedCityToCity(int fromSlotId, int toSlotId, Side side);
+
+    // ✅ 新增：拆分请求（把业务交给 controller）
+    void splitRequested(PieceItem* piece, int a, int b);
 };

@@ -4,6 +4,7 @@ CONFIG += c++17
 
 SOURCES += \
     eventdialog.cpp \
+    gamecontroller.cpp \
     graphicsframe.cpp \
     graphicsview.cpp \
     main.cpp \
@@ -11,17 +12,21 @@ SOURCES += \
     pieceentrywidget.cpp \
     pieceitem.cpp \
     piecelistwidget.cpp \
+    slotmanager.cpp \
     util.cpp
 
 HEADERS += \
     cityslotitem.h \
+    dragdrop.h \
     eventdialog.h \
+    gamecontroller.h \
     graphicsframe.h \
     graphicsview.h \
     mainwindow.h \
     pieceentrywidget.h \
     pieceitem.h \
     piecelistwidget.h \
+    slotmanager.h \
     util.h
 
 FORMS += \

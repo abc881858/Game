@@ -2,6 +2,7 @@
 #include <QDrag>
 #include <QMimeData>
 #include "pieceentrywidget.h"
+#include "dragdrop.h"
 
 PieceListWidget::PieceListWidget(QWidget* parent) : QListWidget(parent)
 {
@@ -33,7 +34,7 @@ void PieceListWidget::startDrag(Qt::DropActions)
     if (pixPath.isEmpty()) return;
 
     auto* mime = new QMimeData;
-    mime->setData("application/x-piece", pixPath.toUtf8());   // ✅ 对齐 GraphicsView
+    mime->setData(DragDrop::MimePiece, pixPath.toUtf8());   // ✅ 对齐 GraphicsView
 
     auto* drag = new QDrag(this);
     drag->setMimeData(mime);

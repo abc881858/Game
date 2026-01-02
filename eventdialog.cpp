@@ -4,6 +4,7 @@
 #include <QDrag>
 #include <QMimeData>
 #include <QPixmap>
+#include "dragdrop.h"
 
 class EventPieceList : public QListWidget
 {
@@ -20,7 +21,7 @@ protected:
         const QString pixPath = it->data(Qt::UserRole).toString();
 
         auto *mime = new QMimeData;
-        mime->setData("application/x-event-piece", (eventId + "|" + pixPath).toUtf8());
+        mime->setData(DragDrop::MimeEventPiece, DragDrop::packEventPiece(eventId, pixPath).toUtf8());
 
         auto *drag = new QDrag(this);
         drag->setMimeData(mime);

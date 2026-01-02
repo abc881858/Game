@@ -47,10 +47,6 @@ MainWindow::MainWindow(QWidget *parent)
     m_graphicsFrame = new GraphicsFrame;
     m_graphicsView = m_graphicsFrame->graphicsView();
 
-    connect(m_graphicsView, &GraphicsView::pieceMovedCityToCity, this, [=](int /*from*/, int /*to*/, Side side){
-        addActionPoints(side, -2);
-    });
-
     scene = new QGraphicsScene(this);
     scene->setSceneRect(0, 0, 3164, 4032);
 
@@ -65,6 +61,30 @@ MainWindow::MainWindow(QWidget *parent)
     centralDock->setWidget(m_graphicsFrame);
     m_DockManager->setCentralWidget(centralDock);
 
+    m_slotMgr = new SlotManager(scene, this);
+    m_graphicsView->setSlotManager(m_slotMgr);
+
+    m_ctrl = new GameController(scene, m_slotMgr, this);
+
+    // View -> Controller
+    connect(m_graphicsView, &GraphicsView::pieceDropped, m_ctrl, &GameController::onPieceDropped);
+    connect(m_graphicsView, &GraphicsView::actionTokenDropped, m_ctrl, &GameController::onActionTokenDropped);
+
+    // Controller -> UI/State
+    connect(m_ctrl, &GameController::actionPointsDelta, this, [=](Side side, int delta){
+        addActionPoints(side, delta);
+    });
+
+    connect(m_ctrl, &GameController::logLine, this, [=](const QString& s){
+        QTextCursor cursor = logTextEdit->textCursor();
+        cursor.movePosition(QTextCursor::End);
+        cursor.insertText(s + "\n");
+        logTextEdit->setTextCursor(cursor);
+    });
+
+    setupReadyList();
+    setupStatusDock();
+
     // ===== Log dock =====
     auto *logDock = new ads::CDockWidget("日志");
     logTextEdit = new QTextEdit;
@@ -78,50 +98,21 @@ MainWindow::MainWindow(QWidget *parent)
     ui->menuView->addAction(logAction);
     logDock->toggleView(false);
 
-    // ===== Now safe to call (scene + dock manager already ready) =====
-    setupReadyList();
-    setupStatusDock();
-
     // ===== action1 event-drop dialog =====
     connect(ui->action1, &QAction::triggered, this, [=](){
         QSet<int> allowed = { 2,3,4,5,6,7,8,9,10,11,12,13,16,17,18,19,20,22,23,24,25,26,27,28,31,32,33,34 };
-
-        m_graphicsView->setEventDropSlots(allowed);
+        m_ctrl->setEventAllowedSlots(allowed);
 
         auto* dlg = new EventDialog(this);
-        dlg->setEventId("SOV_RESERVE_3x4");
-        dlg->addEventPiece("4级兵团", ":/S/S_4JBT.png", 3);
-
-        connect(m_graphicsView, &GraphicsView::eventPiecePlaced, dlg, &EventDialog::onEventPiecePlaced);
-
+        // Controller -> EventDialog
+        connect(m_ctrl, &GameController::eventPiecePlaced, dlg, &EventDialog::onEventPiecePlaced);
         connect(dlg, &QDialog::finished, this, [=](int){
-            m_graphicsView->clearEventDropSlots();
+            m_ctrl->clearEventAllowedSlots();
             dlg->deleteLater();
         });
-
+        dlg->setEventId("SLYBD");//事件-苏联预备队 效果-苏联获得3个4级兵团，放置在任意苏联占领格
+        dlg->addEventPiece("4级兵团", ":/S/S_4JBT.png", 3);
         dlg->show();
-    });
-
-    // ===== 普通落子：苏联大行动签 -> 苏联行动点+6 =====
-    connect(m_graphicsView, &GraphicsView::piecePlaced, this, [=](const QString& pixResPath, int /*slotId*/){
-
-        // 只处理行动签
-        if (!pixResPath.contains("_XDQ", Qt::CaseSensitive))
-            return;
-
-        // 阵营
-        Side side = Side::Unknown;
-        if (pixResPath.startsWith(":/D/")) side = Side::D;
-        else if (pixResPath.startsWith(":/S/")) side = Side::S;
-        if (side == Side::Unknown) return;
-
-        // 点数（2 或 6）
-        int ap = 0;
-        if (pixResPath.contains("XDQ2")) ap = 2;
-        else if (pixResPath.contains("XDQ6")) ap = 6;
-        if (ap == 0) return;
-
-        addActionPoints(side, ap);
     });
 }
 
@@ -132,28 +123,8 @@ MainWindow::~MainWindow()
 
 PieceItem* MainWindow::spawnPieceToCity(int slotId, const QString& pixResPath, qreal z)
 {
-    if (!scene) return nullptr;
-    CitySlotItem* slot = m_slots.value(slotId, nullptr);
-    if (!slot) return nullptr;
-
-    QPixmap pm(pixResPath);
-    if (pm.isNull()) return nullptr;
-
-    auto* p = new PieceItem(pm);
-    connect(p, &PieceItem::movedCityToCity, m_graphicsView, &GraphicsView::pieceMovedCityToCity);
-
-    p->setZValue(z);
-    scene->addItem(p);
-    p->placeToSlot(slot);
-
-    Side side;
-    int lvl;
-    if (parseCorpsFromPixPath(pixResPath, side, lvl)) {
-        p->setUnitMeta(UnitKind::Corps, side, lvl, pixResPath);
-    } else {
-        p->setUnitMeta(UnitKind::Other, Side::Unknown, 0, pixResPath);
-    }
-    return p;
+    if (!m_ctrl) return nullptr;
+    return m_ctrl->spawnToSlot(slotId, pixResPath, z);
 }
 
 void MainWindow::setupReadyList()
@@ -200,6 +171,7 @@ void MainWindow::setupReadyList()
         CitySlotItem* slot = new CitySlotItem(i, cityRects[i]);
         scene->addItem(slot);
         m_slots.insert(i, slot);
+        m_slotMgr->addSlot(slot);
     }
 
     pieceListWidget_D = new PieceListWidget(ui->D_DMQ);

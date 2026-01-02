@@ -7,6 +7,8 @@
 #include <QHash>
 #include <QLabel>
 #include "util.h"
+#include "slotmanager.h"
+#include "gamecontroller.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -70,6 +72,9 @@ private:
     GraphicsFrame *m_graphicsFrame;
     GraphicsView *m_graphicsView;
 
+    SlotManager* m_slotMgr = nullptr;
+    GameController* m_ctrl = nullptr;
+
 public:
     void addTurn(int delta);
     void addNationalPower(Side side, int delta);
@@ -77,7 +82,4 @@ public:
     void addActionPoints(Side side, int delta);  // 加/扣行动点
     void addReadyPoints(Side side, int delta);
     void refreshStatusUI();
-
-public slots:
-
 };
