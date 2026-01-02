@@ -39,7 +39,7 @@ public:
 
 private:
     Ui::MainWindow *ui;
-    ads::CDockManager* m_DockManager;
+    ads::CDockManager* m_dockManager;
     QGraphicsScene *scene;
     PieceListWidget *pieceListWidget_D;
     PieceListWidget *pieceListWidget_S;
@@ -77,8 +77,8 @@ private:
     GraphicsFrame *m_graphicsFrame;
     GraphicsView *m_graphicsView;
 
-    SlotManager* m_slotMgr = nullptr;
-    GameController* m_ctrl = nullptr;
+    SlotManager* m_slotManager = nullptr;
+    GameController* m_gameController = nullptr;
 
 public slots:
     void addActionPoints(Side side, int delta);  // 加/扣行动点

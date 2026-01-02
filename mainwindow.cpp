@@ -40,8 +40,8 @@ MainWindow::MainWindow(QWidget *parent)
     hostLayout->setSpacing(0);
 
     // ===== Dock manager first (setupStatusDock needs it) =====
-    m_DockManager = new ads::CDockManager(ui->dockWidget);
-    hostLayout->addWidget(m_DockManager);
+    m_dockManager = new ads::CDockManager(ui->dockWidget);
+    hostLayout->addWidget(m_dockManager);
 
     // ===== Central view + scene (setupReadyList needs scene) =====
     m_graphicsFrame = new GraphicsFrame;
@@ -59,28 +59,19 @@ MainWindow::MainWindow(QWidget *parent)
 
     auto *centralDock = new ads::CDockWidget("场上");
     centralDock->setWidget(m_graphicsFrame);
-    m_DockManager->setCentralWidget(centralDock);
+    m_dockManager->setCentralWidget(centralDock);
 
-    m_slotMgr = new SlotManager(scene, this);
-    m_graphicsView->setSlotManager(m_slotMgr);
+    m_slotManager = new SlotManager(scene, this);
+    m_graphicsView->setSlotManager(m_slotManager);
 
-    m_ctrl = new GameController(scene, m_slotMgr, this);
-
-    connect(m_graphicsView, &GraphicsView::pieceDropped, m_ctrl, &GameController::onPieceDropped);
-    connect(m_graphicsView, &GraphicsView::actionTokenDropped, m_ctrl, &GameController::onActionTokenDropped);
-
-    connect(m_ctrl, &GameController::actionPointsDelta, this, &MainWindow::addActionPoints);
-    connect(m_ctrl, &GameController::logLine, this, &MainWindow::appendLog);
-
-    setupReadyList();
-    setupStatusDock();
+    m_gameController = new GameController(scene, m_slotManager, this);
 
     // ===== Log dock =====
     auto *logDock = new ads::CDockWidget("日志");
     logTextEdit = new QTextEdit;
     logDock->setWidget(logTextEdit);
-    m_DockManager->addDockWidget(ads::BottomDockWidgetArea, logDock);
-    m_DockManager->setSplitterSizes(centralDock->dockAreaWidget(), {800, 200});
+    m_dockManager->addDockWidget(ads::BottomDockWidgetArea, logDock);
+    m_dockManager->setSplitterSizes(centralDock->dockAreaWidget(), {800, 200});
 
     QAction *logAction = logDock->toggleViewAction();
     logAction->setIcon(QIcon(":/res/log.png"));
@@ -88,16 +79,25 @@ MainWindow::MainWindow(QWidget *parent)
     ui->menuView->addAction(logAction);
     logDock->toggleView(false);
 
+    connect(m_graphicsView, &GraphicsView::pieceDropped, m_gameController, &GameController::onPieceDropped);
+    connect(m_graphicsView, &GraphicsView::actionTokenDropped, m_gameController, &GameController::onActionTokenDropped);
+
+    connect(m_gameController, &GameController::actionPointsDelta, this, &MainWindow::addActionPoints);
+    connect(m_gameController, &GameController::logLine, this, &MainWindow::appendLog);
+
+    setupReadyList();
+    setupStatusDock();
+
     // ===== action1 event-drop dialog =====
     connect(ui->action1, &QAction::triggered, this, [=](){
         QSet<int> allowed = { 2,3,4,5,6,7,8,9,10,11,12,13,16,17,18,19,20,22,23,24,25,26,27,28,31,32,33,34 };
-        m_ctrl->setEventAllowedSlots(allowed);
+        m_gameController->setEventAllowedSlots(allowed);
 
         auto* dlg = new EventDialog(this);
         // Controller -> EventDialog
-        connect(m_ctrl, &GameController::eventPiecePlaced, dlg, &EventDialog::onEventPiecePlaced);
+        connect(m_gameController, &GameController::eventPiecePlaced, dlg, &EventDialog::onEventPiecePlaced);
         connect(dlg, &QDialog::finished, this, [=](int){
-            m_ctrl->clearEventAllowedSlots();
+            m_gameController->clearEventAllowedSlots();
             dlg->deleteLater();
         });
         dlg->setEventId("SLYBD");//事件-苏联预备队 效果-苏联获得3个4级兵团，放置在任意苏联占领格
@@ -113,8 +113,8 @@ MainWindow::~MainWindow()
 
 PieceItem* MainWindow::spawnPieceToCity(int slotId, const QString& pixResPath, qreal z)
 {
-    if (!m_ctrl) return nullptr;
-    return m_ctrl->spawnToSlot(slotId, pixResPath, z);
+    if (!m_gameController) return nullptr;
+    return m_gameController->spawnToSlot(slotId, pixResPath, z);
 }
 
 void MainWindow::setupReadyList()
@@ -161,7 +161,7 @@ void MainWindow::setupReadyList()
         CitySlotItem* slot = new CitySlotItem(i, cityRects[i]);
         scene->addItem(slot);
         m_slots.insert(i, slot);
-        m_slotMgr->addSlot(slot);
+        m_slotManager->addSlot(slot);
     }
 
     pieceListWidget_D = new PieceListWidget(ui->D_DMQ);
@@ -384,7 +384,7 @@ void MainWindow::setupStatusDock()
     grid->addWidget(m_apLabelS, 2, 4);
     grid->addWidget(m_rpLabelS, 2, 5);
 
-    m_DockManager->addDockWidget(ads::TopDockWidgetArea, statusDock);
+    m_dockManager->addDockWidget(ads::TopDockWidgetArea, statusDock);
 
     refreshStatusUI();
 
