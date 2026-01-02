@@ -30,7 +30,7 @@ protected:
         drag->setPixmap(pm.scaled(64,64, Qt::KeepAspectRatio, Qt::SmoothTransformation));
         drag->setHotSpot(QPoint(drag->pixmap().width()/2, drag->pixmap().height()/2));
 
-        drag->exec(Qt::CopyAction);
+        drag->exec(Qt::MoveAction);
     }
 };
 

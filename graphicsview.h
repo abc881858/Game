@@ -14,8 +14,6 @@ class GraphicsView : public QGraphicsView
 
 public:
     explicit GraphicsView(GraphicsFrame *graphicsFrame);
-    void setEventDropRegions(const QSet<int>& allowedRegionIds) { eventAllowedRegionIds = allowedRegionIds; }
-    void clearEventDropRegions() { eventAllowedRegionIds.clear(); }
     void setPlacementManager(PlacementManager* placementManager) { m_placementManager = placementManager; }
 
 protected:
@@ -33,7 +31,6 @@ private:
     QRubberBand *rubberBand = nullptr;
     bool selecting = false;
     QPoint origin;
-    QSet<int> eventAllowedRegionIds;
     PlacementManager* m_placementManager = nullptr;
 
 signals:
