@@ -20,26 +20,6 @@ GameController::GameController(QGraphicsScene* scene, PlacementManager* placemen
 {
 }
 
-PieceItem* GameController::spawnToRegion(int regionId, const QString& pixPath, qreal z)
-{
-    if (!m_scene || !m_placementManager) return nullptr;
-    if (regionId < 0) return nullptr;
-
-    // 行动签不应该走这里（初始化也不会用行动签）
-    if (isActionTokenPath(pixPath)) return nullptr;
-
-    auto* item = createPieceFromPixPath(pixPath);
-    if (!item) return nullptr;
-
-    item->setZValue(z);
-    m_scene->addItem(item);
-
-    m_placementManager->movePieceToRegion(item, regionId);
-    item->markLastValid(regionId);
-
-    return item;
-}
-
 PieceItem* GameController::createPieceFromPixPath(const QString& pixPath)
 {
     QPixmap pm(pixPath);
@@ -64,46 +44,15 @@ PieceItem* GameController::createPieceFromPixPath(const QString& pixPath)
     return item;
 }
 
-PieceItem* GameController::createCorpsPiece(Side side, int level)
-{
-    const QString path = corpsPixPath(side, level);
-    return createPieceFromPixPath(path);
-}
-
 void GameController::onPieceDropped(const QString& pixPath,
                                    const QString& eventId,
                                    int regionId,
                                    bool isEvent)
 {
-    if (!m_scene || !m_placementManager) return;
-
-    // 规则：事件棋子必须在允许格
-    if (isEvent) {
-        if (!m_eventAllowedRegions.contains(regionId)) {
-            emit logLine(QString("事件落子失败：region %1 不在允许列表").arg(regionId), Qt::black, true);
-            return;
-        }
-    }
-
-    // 行动签不走这里（应该由 GraphicsView/Controller 直接识别）
+    // 行动签不走这里（保险）
     if (isActionTokenPath(pixPath)) return;
 
-    auto* item = createPieceFromPixPath(pixPath);
-    if (!item) return;
-
-    item->setZValue(20);
-    m_scene->addItem(item);
-
-    // ✅ 统一由 PlacementManager 维护归属 + 重排
-    m_placementManager->movePieceToRegion(item, regionId);
-
-    // ✅ 初始化回滚点（第一次拖动松手才能回滚）
-    item->markLastValid(regionId);
-
-    // 事件对话框计数扣减
-    if (isEvent) {
-        emit eventPiecePlaced(eventId, pixPath, regionId);
-    }
+    placeNewPieceToRegion(regionId, pixPath, 20.0, eventId, isEvent);
 }
 
 void GameController::onActionTokenDropped(const QString& pixPath)
@@ -143,14 +92,8 @@ void GameController::onSplitRequested(PieceItem* piece, int a, int b)
 
     // 3) 生成两个新兵团并放回同城
     auto spawnOne = [&](int lvl){
-        auto* ni = createCorpsPiece(side, lvl);
-        if (!ni) return;
-
-        ni->setZValue(20);
-        m_scene->addItem(ni);
-
-        m_placementManager->movePieceToRegion(ni, regionId);
-        ni->markLastValid(regionId);
+        const QString path = corpsPixPath(side, lvl);
+        placeNewPieceToRegion(regionId, path, 20.0);
     };
 
     spawnOne(a);
@@ -161,4 +104,39 @@ void GameController::onSplitRequested(PieceItem* piece, int a, int b)
                  .arg(piece->level())
                  .arg(a)
                  .arg(b), Qt::black, true);
+}
+
+PieceItem* GameController::placeNewPieceToRegion(int regionId,
+                                                 const QString& pixPath,
+                                                 qreal z,
+                                                 const QString& eventId,
+                                                 bool isEvent)
+{
+    if (!m_scene || !m_placementManager) return nullptr;
+    if (regionId < 0) return nullptr;
+    if (pixPath.isEmpty()) return nullptr;
+
+    // 行动签不生成棋子
+    if (isActionTokenPath(pixPath)) return nullptr;
+
+    // 事件落子合法性（如果你希望只有 drop 入口才检查，也可以把这段挪出去）
+    if (isEvent && !m_eventAllowedRegions.contains(regionId)) {
+        emit logLine(QString("事件落子失败：region %1 不在允许列表").arg(regionId), Qt::black, true);
+        return nullptr;
+    }
+
+    auto* item = createPieceFromPixPath(pixPath);
+    if (!item) return nullptr;
+
+    item->setZValue(z);
+    m_scene->addItem(item);
+
+    m_placementManager->movePieceToRegion(item, regionId);
+    item->markLastValid(regionId);
+
+    if (isEvent) {
+        emit eventPiecePlaced(eventId, pixPath, regionId);
+    }
+
+    return item;
 }

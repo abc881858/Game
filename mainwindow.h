@@ -32,7 +32,6 @@ public:
     void addNationalPower(Side side, int delta);
     void addOil(Side side, int delta);
     void addReadyPoints(Side side, int delta);
-    PieceItem* spawnPieceToRegion(int regionId, const QString& pixResPath, qreal z = 20);
 
 public slots:
     void addActionPoints(Side side, int delta);  // 加/扣行动点

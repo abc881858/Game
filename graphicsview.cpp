@@ -118,7 +118,6 @@ void GraphicsView::dragMoveEvent(QDragMoveEvent *e)
 
 void GraphicsView::dragLeaveEvent(QDragLeaveEvent *e)
 {
-    // 不交给 QGraphicsView 默认实现（它会在 enter/leave 不配对时 qWarning）
     e->accept();
 }
 

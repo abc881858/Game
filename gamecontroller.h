@@ -21,8 +21,11 @@ public:
     void setEventAllowedRegions(const QSet<int>& ids) { m_eventAllowedRegions = ids; }
     void clearEventAllowedRegions() { m_eventAllowedRegions.clear(); }
 
-    // 给 MainWindow 的初始化用：在指定 region 生成并放置
-    PieceItem* spawnToRegion(int regionId, const QString& pixPath, qreal z = 20);
+    PieceItem* placeNewPieceToRegion(int regionId,
+                                     const QString& pixPath,
+                                     qreal z = 20.0,
+                                     const QString& eventId = QString(),
+                                     bool isEvent = false);
 
 public slots:
     // 由 GraphicsView 在 dropEvent 中转发过来
@@ -44,7 +47,6 @@ signals:
 
 private:
     PieceItem* createPieceFromPixPath(const QString& pixPath);
-    PieceItem* createCorpsPiece(Side side, int level);
 
     QGraphicsScene* m_scene = nullptr;
     PlacementManager*    m_placementManager = nullptr;

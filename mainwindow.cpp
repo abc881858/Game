@@ -179,8 +179,7 @@ void MainWindow::initEventActions()
 
         auto* dlg = new EventDialog(this);
 
-        connect(m_gameController, &GameController::eventPiecePlaced,
-                dlg, &EventDialog::onEventPiecePlaced);
+        connect(m_gameController, &GameController::eventPiecePlaced, dlg, &EventDialog::onEventPiecePlaced);
 
         connect(dlg, &QDialog::finished, this, [this, dlg](int){
             m_gameController->clearEventAllowedRegions();
@@ -308,36 +307,35 @@ void MainWindow::initPieceLists()
 
 void MainWindow::initGameBoardPieces()
 {
-    spawnPieceToRegion(1, ":/D/D_2JBT.png");//挪威北部
-    spawnPieceToRegion(2, ":/S/S_2JBT.png");//摩尔曼斯克
-    spawnPieceToRegion(6, ":/S/S_F4.png");//列宁格勒
-    spawnPieceToRegion(11, ":/D/D_4JBT.png");//波罗的海国家
-    spawnPieceToRegion(11, ":/D/D_4JBT.png");//波罗的海国家
-    spawnPieceToRegion(14, ":/D/D_4JBT.png");//东普鲁士
-    spawnPieceToRegion(16, ":/D/D_4JBT.png");//白俄罗斯
-    spawnPieceToRegion(16, ":/D/D_4JBT.png");//白俄罗斯
-    spawnPieceToRegion(16, ":/D/D_2JBT.png");//白俄罗斯
-    spawnPieceToRegion(21, ":/D/D_2JBT.png");//波兰南部
-    spawnPieceToRegion(22, ":/D/D_4JBT.png");//利沃夫
-    spawnPieceToRegion(22, ":/D/D_4JBT.png");//利沃夫
-    spawnPieceToRegion(23, ":/S/S_4JBT.png");//基辅
-    spawnPieceToRegion(28, ":/S/S_4JBT.png");//敖德萨
-    spawnPieceToRegion(30, ":/L/L_4JBT.png");//罗马尼亚
-    spawnPieceToRegion(30, ":/L/L_3JBT.png");//罗马尼亚
-    spawnPieceToRegion(30, ":/D/D_4JBT.png");//罗马尼亚
-    spawnPieceToRegion(31, ":/S/S_F4.png");//克里米亚
-    spawnPieceToRegion(34, ":/S/S_3JBT.png");//巴库
+    auto spawn = [this](int rid, const QString& path, qreal z = 20.0){
+        if (!m_gameController) return;
+        m_gameController->placeNewPieceToRegion(rid, path, z);
+    };
+
+    spawn(1,  ":/D/D_2JBT.png"); // 挪威北部
+    spawn(2,  ":/S/S_2JBT.png"); // 摩尔曼斯克
+    spawn(6,  ":/S/S_F4.png");   // 列宁格勒
+    spawn(11, ":/D/D_4JBT.png"); // 波罗的海国家
+    spawn(11, ":/D/D_4JBT.png");
+    spawn(14, ":/D/D_4JBT.png"); // 东普鲁士
+    spawn(16, ":/D/D_4JBT.png"); // 白俄罗斯
+    spawn(16, ":/D/D_4JBT.png");
+    spawn(16, ":/D/D_2JBT.png");
+    spawn(21, ":/D/D_2JBT.png"); // 波兰南部
+    spawn(22, ":/D/D_4JBT.png"); // 利沃夫
+    spawn(22, ":/D/D_4JBT.png");
+    spawn(23, ":/S/S_4JBT.png"); // 基辅
+    spawn(28, ":/S/S_4JBT.png"); // 敖德萨
+    spawn(30, ":/L/L_4JBT.png"); // 罗马尼亚
+    spawn(30, ":/L/L_3JBT.png");
+    spawn(30, ":/D/D_4JBT.png");
+    spawn(31, ":/S/S_F4.png");   // 克里米亚
+    spawn(34, ":/S/S_3JBT.png"); // 巴库
 }
 
 // =====================================================
 // 逻辑函数
 // =====================================================
-
-PieceItem* MainWindow::spawnPieceToRegion(int regionId, const QString& pixResPath, qreal z)
-{
-    if (!m_gameController) return nullptr;
-    return m_gameController->spawnToRegion(regionId, pixResPath, z);
-}
 
 void MainWindow::on_action_DTZ_triggered()
 {
