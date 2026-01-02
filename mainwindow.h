@@ -23,15 +23,20 @@ class GraphicsView;
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
+
 public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
+    void setupStatusDock();
     void setupReadyList();
     void addPieceD(const QString &name, const QString &pixResPath, int count);
     void addPieceS(const QString &name, const QString &pixResPath, int count);
-private slots:
-    void on_action_DTZ_triggered();
-    void on_action_STZ_triggered();
+    void addTurn(int delta);
+    void addNationalPower(Side side, int delta);
+    void addOil(Side side, int delta);
+    void addReadyPoints(Side side, int delta);
+    void refreshStatusUI();
+
 private:
     Ui::MainWindow *ui;
     ads::CDockManager* m_DockManager;
@@ -41,7 +46,7 @@ private:
     QHash<int, CitySlotItem*> m_slots;
     PieceItem* spawnPieceToCity(int slotId, const QString& pixResPath, qreal z = 20);
     QTextEdit *logTextEdit;
-private:
+
     // ===== 状态数值 =====
     int m_turn = 1;            // 回合 1-8
 
@@ -68,18 +73,17 @@ private:
     QLabel* m_apLabelS = nullptr;
     QLabel* m_rpLabelS = nullptr;
 
-    void setupStatusDock();          // 创建 dock
+
     GraphicsFrame *m_graphicsFrame;
     GraphicsView *m_graphicsView;
 
     SlotManager* m_slotMgr = nullptr;
     GameController* m_ctrl = nullptr;
 
-public:
-    void addTurn(int delta);
-    void addNationalPower(Side side, int delta);
-    void addOil(Side side, int delta);
+public slots:
     void addActionPoints(Side side, int delta);  // 加/扣行动点
-    void addReadyPoints(Side side, int delta);
-    void refreshStatusUI();
+
+private slots:
+    void on_action_DTZ_triggered();
+    void on_action_STZ_triggered();
 };

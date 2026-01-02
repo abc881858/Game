@@ -66,11 +66,9 @@ MainWindow::MainWindow(QWidget *parent)
 
     m_ctrl = new GameController(scene, m_slotMgr, this);
 
-    // View -> Controller
     connect(m_graphicsView, &GraphicsView::pieceDropped, m_ctrl, &GameController::onPieceDropped);
     connect(m_graphicsView, &GraphicsView::actionTokenDropped, m_ctrl, &GameController::onActionTokenDropped);
 
-    // Controller -> UI/State
     connect(m_ctrl, &GameController::actionPointsDelta, this, [=](Side side, int delta){
         addActionPoints(side, delta);
     });
