@@ -1,125 +1,28 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
+
 #include <QGraphicsPixmapItem>
-#include "cityslotitem.h"
-#include "pieceitem.h"
 #include <QListWidget>
 #include <QListWidgetItem>
 #include <QVBoxLayout>
 #include <QPixmap>
 #include <QActionGroup>
-#include "piecelistwidget.h"
 #include <QTextEdit>
 #include <QTimer>
+#include <QRandomGenerator>
+#include <QGridLayout>
+#include <QLabel>
+
+#include "cityslotitem.h"
+#include "pieceitem.h"
 #include "graphicsframe.h"
 #include "eventdialog.h"
-#include <QRandomGenerator>
 #include "pieceentrywidget.h"
 
-MainWindow::MainWindow(QWidget *parent)
-    : QMainWindow(parent)
-    , ui(new Ui::MainWindow)
+// ======= 小工具：城市格子矩形表 =======
+static QVector<QRectF> buildCityRects()
 {
-    ui->setupUi(this);
-
-    // ===== actions =====
-    auto *actionGroup = new QActionGroup(this);
-    actionGroup->addAction(ui->action1);
-    actionGroup->addAction(ui->action2);
-    actionGroup->addAction(ui->action3);
-    actionGroup->addAction(ui->action4);
-    actionGroup->addAction(ui->action5);
-    actionGroup->addAction(ui->action6);
-
-    ui->D->setCurrentIndex(0);
-    ui->S->setCurrentIndex(0);
-
-    // ===== Dock host layout first =====
-    auto *hostLayout = new QVBoxLayout(ui->dockWidget);
-    hostLayout->setContentsMargins(0,0,0,0);
-    hostLayout->setSpacing(0);
-
-    // ===== Dock manager first (setupStatusDock needs it) =====
-    m_dockManager = new ads::CDockManager(ui->dockWidget);
-    hostLayout->addWidget(m_dockManager);
-
-    // ===== Central view + scene (setupReadyList needs scene) =====
-    m_graphicsFrame = new GraphicsFrame;
-    m_graphicsView = m_graphicsFrame->graphicsView();
-
-    scene = new QGraphicsScene(this);
-    scene->setSceneRect(0, 0, 3164, 4032);
-
-    auto *back_item = new QGraphicsPixmapItem(QPixmap::fromImage(QImage(":/res/back.png")));
-    back_item->setPos(0, 0);
-    back_item->setZValue(0);
-    scene->addItem(back_item);
-
-    m_graphicsView->setScene(scene);
-
-    auto *centralDock = new ads::CDockWidget("场上");
-    centralDock->setWidget(m_graphicsFrame);
-    m_dockManager->setCentralWidget(centralDock);
-
-    m_slotManager = new SlotManager(scene, this);
-    m_graphicsView->setSlotManager(m_slotManager);
-
-    m_gameController = new GameController(scene, m_slotManager, this);
-
-    // ===== Log dock =====
-    auto *logDock = new ads::CDockWidget("日志");
-    logTextEdit = new QTextEdit;
-    logDock->setWidget(logTextEdit);
-    m_dockManager->addDockWidget(ads::BottomDockWidgetArea, logDock);
-    m_dockManager->setSplitterSizes(centralDock->dockAreaWidget(), {800, 200});
-
-    QAction *logAction = logDock->toggleViewAction();
-    logAction->setIcon(QIcon(":/res/log.png"));
-    logAction->setText("日志");
-    ui->menuView->addAction(logAction);
-    logDock->toggleView(false);
-
-    connect(m_graphicsView, &GraphicsView::pieceDropped, m_gameController, &GameController::onPieceDropped);
-    connect(m_graphicsView, &GraphicsView::actionTokenDropped, m_gameController, &GameController::onActionTokenDropped);
-
-    connect(m_gameController, &GameController::actionPointsDelta, this, &MainWindow::addActionPoints);
-    connect(m_gameController, &GameController::logLine, this, &MainWindow::appendLog);
-
-    setupReadyList();
-    setupStatusDock();
-
-    // ===== action1 event-drop dialog =====
-    connect(ui->action1, &QAction::triggered, this, [=](){
-        QSet<int> allowed = { 2,3,4,5,6,7,8,9,10,11,12,13,16,17,18,19,20,22,23,24,25,26,27,28,31,32,33,34 };
-        m_gameController->setEventAllowedSlots(allowed);
-
-        auto* dlg = new EventDialog(this);
-        // Controller -> EventDialog
-        connect(m_gameController, &GameController::eventPiecePlaced, dlg, &EventDialog::onEventPiecePlaced);
-        connect(dlg, &QDialog::finished, this, [=](int){
-            m_gameController->clearEventAllowedSlots();
-            dlg->deleteLater();
-        });
-        dlg->setEventId("SLYBD");//事件-苏联预备队 效果-苏联获得3个4级兵团，放置在任意苏联占领格
-        dlg->addEventPiece("4级兵团", ":/S/S_4JBT.png", 3);
-        dlg->show();
-    });
-}
-
-MainWindow::~MainWindow()
-{
-    delete ui;
-}
-
-PieceItem* MainWindow::spawnPieceToCity(int slotId, const QString& pixResPath, qreal z)
-{
-    if (!m_gameController) return nullptr;
-    return m_gameController->spawnToSlot(slotId, pixResPath, z);
-}
-
-void MainWindow::setupReadyList()
-{
-    const QVector<QRectF> cityRects = {
+    return {
         QRectF(972.46, 1166.95, 198.72, 209.29),  //挪威北部 0 D
         QRectF(1310.70, 1169.06, 198.72, 211.40), //芬兰北部 1 D
         QRectF(1593.98, 1179.63, 200.83, 211.40), //摩尔曼斯克 2 S
@@ -156,27 +59,181 @@ void MainWindow::setupReadyList()
         QRectF(1961.83, 3232.36, 205.06, 211.40), //巴统 33 S
         QRectF(2401.54, 3409.94, 205.06, 205.06), //巴库 34 S
     };
+}
+
+// =====================================================
+
+MainWindow::MainWindow(QWidget *parent)
+    : QMainWindow(parent)
+    , ui(new Ui::MainWindow)
+{
+    ui->setupUi(this);
+
+    ui->D->setCurrentIndex(0);
+    ui->S->setCurrentIndex(0);
+
+    initActions();
+    initDockSystem();
+    initCentralView();
+    initScene();
+    initControllers();
+    initLogDock();
+    initStatusDock();
+    initSlots();
+    initPieceLists();
+    initGameBoardPieces();
+    initEventActions();
+    refreshStatusUI();
+}
+
+MainWindow::~MainWindow()
+{
+    delete ui;
+}
+
+// =====================================================
+// 初始化阶段
+// =====================================================
+
+void MainWindow::initActions()
+{
+    auto *actionGroup = new QActionGroup(this);
+    actionGroup->addAction(ui->action1);
+    actionGroup->addAction(ui->action2);
+    actionGroup->addAction(ui->action3);
+    actionGroup->addAction(ui->action4);
+    actionGroup->addAction(ui->action5);
+    actionGroup->addAction(ui->action6);
+}
+
+void MainWindow::initDockSystem()
+{
+    auto *hostLayout = new QVBoxLayout(ui->dockWidget);
+    hostLayout->setContentsMargins(0,0,0,0);
+    hostLayout->setSpacing(0);
+
+    m_dockManager = new ads::CDockManager(ui->dockWidget);
+    hostLayout->addWidget(m_dockManager);
+
+    m_centralDock = new ads::CDockWidget("场上");
+    m_dockManager->setCentralWidget(m_centralDock);
+}
+
+void MainWindow::initCentralView()
+{
+    m_graphicsFrame = new GraphicsFrame;
+    m_graphicsView = m_graphicsFrame->graphicsView();
+
+    if (m_centralDock)
+        m_centralDock->setWidget(m_graphicsFrame);
+}
+
+void MainWindow::initScene()
+{
+    scene = new QGraphicsScene(this);
+    scene->setSceneRect(0, 0, 3164, 4032);
+
+    auto *backItem = new QGraphicsPixmapItem(QPixmap::fromImage(QImage(":/res/back.png")));
+    backItem->setPos(0, 0);
+    backItem->setZValue(0);
+    scene->addItem(backItem);
+
+    m_graphicsView->setScene(scene);
+}
+
+void MainWindow::initControllers()
+{
+    m_slotManager = new SlotManager(scene, this);
+    m_graphicsView->setSlotManager(m_slotManager);
+
+    m_gameController = new GameController(scene, m_slotManager, this);
+
+    connect(m_graphicsView, &GraphicsView::pieceDropped,
+            m_gameController, &GameController::onPieceDropped);
+    connect(m_graphicsView, &GraphicsView::actionTokenDropped,
+            m_gameController, &GameController::onActionTokenDropped);
+
+    connect(m_gameController, &GameController::actionPointsDelta,
+            this, &MainWindow::addActionPoints);
+    connect(m_gameController, &GameController::logLine,
+            this, &MainWindow::appendLog);
+}
+
+void MainWindow::initLogDock()
+{
+    auto *logDock = new ads::CDockWidget("日志");
+    logTextEdit = new QTextEdit;
+    logDock->setWidget(logTextEdit);
+
+    m_dockManager->addDockWidget(ads::BottomDockWidgetArea, logDock);
+    m_dockManager->setSplitterSizes(m_centralDock->dockAreaWidget(), {800, 200});
+
+    QAction *logAction = logDock->toggleViewAction();
+    logAction->setIcon(QIcon(":/res/log.png"));
+    logAction->setText("日志");
+    ui->menuView->addAction(logAction);
+
+    logDock->toggleView(false);
+}
+
+void MainWindow::initEventActions()
+{
+    // action1：事件投放
+    connect(ui->action1, &QAction::triggered, this, [this](){
+        QSet<int> allowed = { 2,3,4,5,6,7,8,9,10,11,12,13,16,17,18,19,20,22,23,24,25,26,27,28,31,32,33,34 };
+        m_gameController->setEventAllowedSlots(allowed);
+
+        auto* dlg = new EventDialog(this);
+
+        connect(m_gameController, &GameController::eventPiecePlaced,
+                dlg, &EventDialog::onEventPiecePlaced);
+
+        connect(dlg, &QDialog::finished, this, [this, dlg](int){
+            m_gameController->clearEventAllowedSlots();
+            dlg->deleteLater();
+        });
+
+        dlg->setEventId("SLYBD");//事件-苏联预备队
+        dlg->addEventPiece("4级兵团", ":/S/S_4JBT.png", 3);
+        dlg->show();
+    });
+}
+
+void MainWindow::initSlots()
+{
+    const auto cityRects = buildCityRects();
 
     for (int i = 0; i < cityRects.size(); ++i) {
-        CitySlotItem* slot = new CitySlotItem(i, cityRects[i]);
+        auto *slot = new CitySlotItem(i, cityRects[i]);
         scene->addItem(slot);
-        m_slots.insert(i, slot);
         m_slotManager->addSlot(slot);
     }
+}
 
-    pieceListWidget_D = new PieceListWidget(ui->D_DMQ);
-    pieceListWidget_D->setViewMode(QListView::IconMode);
-    pieceListWidget_D->setIconSize(QSize(72,72));
-    pieceListWidget_D->setResizeMode(QListView::Adjust);
-    pieceListWidget_D->setMovement(QListView::Static);
-    pieceListWidget_D->setSpacing(8);
-    pieceListWidget_D->setDragEnabled(true);
-    pieceListWidget_D->setSelectionMode(QAbstractItemView::SingleSelection);
+PieceListWidget* MainWindow::createPieceList(QWidget* host)
+{
+    auto *list = new PieceListWidget(host);
+    list->setViewMode(QListView::IconMode);
+    list->setIconSize(QSize(72,72));
+    list->setResizeMode(QListView::Adjust);
+    list->setMovement(QListView::Static);
+    list->setSpacing(8);
+    list->setDragEnabled(true);
+    list->setSelectionMode(QAbstractItemView::SingleSelection);
 
-    QVBoxLayout *layout_D = new QVBoxLayout(ui->D_DMQ);
-    layout_D->setContentsMargins(4,4,4,4);
-    layout_D->addWidget(pieceListWidget_D);
+    auto *layout = new QVBoxLayout(host);
+    layout->setContentsMargins(4,4,4,4);
+    layout->addWidget(list);
 
+    return list;
+}
+
+void MainWindow::initPieceLists()
+{
+    pieceListWidget_D = createPieceList(ui->D_DMQ);
+    pieceListWidget_S = createPieceList(ui->S_DMQ);
+
+    // ===== D pieces =====
     addPieceD("德国大行动签",":/D/D_XDQ6.png", 1);
     addPieceD("德国小行动签",":/D/D_XDQ2.png", 1);
     addPieceD("1级兵团",":/D/D_1JBT.png", 0);
@@ -220,19 +277,7 @@ void MainWindow::setupReadyList()
     addPieceD("精锐掷弹兵",":/D/D_JRZDB.png", 0);
     addPieceD("精锐装甲兵",":/D/D_JRZJB.png", 4);
 
-    pieceListWidget_S = new PieceListWidget(ui->S_DMQ);
-    pieceListWidget_S->setViewMode(QListView::IconMode);
-    pieceListWidget_S->setIconSize(QSize(72,72));
-    pieceListWidget_S->setResizeMode(QListView::Adjust);
-    pieceListWidget_S->setMovement(QListView::Static);
-    pieceListWidget_S->setSpacing(8);
-    pieceListWidget_S->setDragEnabled(true);
-    pieceListWidget_S->setSelectionMode(QAbstractItemView::SingleSelection);
-
-    QVBoxLayout *layout_S = new QVBoxLayout(ui->S_DMQ);
-    layout_S->setContentsMargins(4,4,4,4);
-    layout_S->addWidget(pieceListWidget_S);
-
+    // ===== S pieces =====
     addPieceS("苏联大行动签",":/S/S_XDQ6.png", 1);
     addPieceS("苏联小行动签",":/S/S_XDQ2.png", 1);
     addPieceS("1级兵团",":/S/S_1JBT.png", 0);
@@ -263,11 +308,12 @@ void MainWindow::setupReadyList()
     addPieceS("精锐航空兵",":/S/S_JRHKB.png", 0);
     addPieceS("精锐装甲兵",":/S/S_JRZJB.png", 0);
 
-    // addPieceS("1级要塞",":/S/S_F1.png");
-    // addPieceS("2级要塞",":/S/S_F2.png");
-    // addPieceS("3级要塞",":/S/S_F3.png");
-    // addPieceS("4级要塞",":/S/S_F4.png");
+    // 你原来注释掉的要塞，如需可以在这里加回
+    // addPieceS("1级要塞",":/S/S_F1.png", 0);
+}
 
+void MainWindow::initGameBoardPieces()
+{
     spawnPieceToCity(1, ":/D/D_2JBT.png");//挪威北部
     spawnPieceToCity(2, ":/S/S_2JBT.png");//摩尔曼斯克
     spawnPieceToCity(6, ":/S/S_F4.png");//列宁格勒
@@ -289,6 +335,16 @@ void MainWindow::setupReadyList()
     spawnPieceToCity(34, ":/S/S_3JBT.png");//巴库
 }
 
+// =====================================================
+// 逻辑函数
+// =====================================================
+
+PieceItem* MainWindow::spawnPieceToCity(int slotId, const QString& pixResPath, qreal z)
+{
+    if (!m_gameController) return nullptr;
+    return m_gameController->spawnToSlot(slotId, pixResPath, z);
+}
+
 void MainWindow::on_action_DTZ_triggered()
 {
     int num = QRandomGenerator::global()->bounded(1, 7);
@@ -304,7 +360,7 @@ void MainWindow::on_action_STZ_triggered()
 void MainWindow::addPieceD(const QString& name, const QString& pixResPath, int count)
 {
     auto* it = new QListWidgetItem;
-    it->setSizeHint(QSize(220, 80));         // 控制每行高度/宽度
+    it->setSizeHint(QSize(220, 80));
     it->setData(Qt::UserRole, pixResPath);
     it->setData(Qt::UserRole + 1, count);
 
@@ -329,7 +385,11 @@ void MainWindow::addPieceS(const QString& name, const QString& pixResPath, int c
     pieceListWidget_S->setItemWidget(it, w);
 }
 
-void MainWindow::setupStatusDock()
+// =====================================================
+// 状态 Dock
+// =====================================================
+
+void MainWindow::initStatusDock()
 {
     auto *statusDock = new ads::CDockWidget("状态");
     auto *w = new QWidget;
@@ -340,45 +400,39 @@ void MainWindow::setupStatusDock()
     grid->setHorizontalSpacing(12);
     grid->setVerticalSpacing(6);
 
-    // ===== 左侧：回合（单独一列）=====
+    // 左侧：回合
     auto *lbTurn = new QLabel("回合");
-    m_turnLabel = new QLabel("1");
-
+    m_turnLabel = new QLabel(QString::number(m_turn));
     lbTurn->setAlignment(Qt::AlignCenter);
     m_turnLabel->setAlignment(Qt::AlignCenter);
 
-    // 放在第0列，跨多行（0~2行：表头+德国+苏联）
     grid->addWidget(lbTurn, 0, 0, 1, 1);
     grid->addWidget(m_turnLabel, 1, 0, 2, 1);
 
-    // ===== 表头：指标列 =====
-    grid->addWidget(new QLabel(""), 0, 1);  // 行标题占位
+    // 表头
+    grid->addWidget(new QLabel(""), 0, 1);
     grid->addWidget(new QLabel("国力"), 0, 2);
     grid->addWidget(new QLabel("石油"), 0, 3);
     grid->addWidget(new QLabel("行动点"), 0, 4);
     grid->addWidget(new QLabel("准备点"), 0, 5);
 
-    // ===== 德国行 =====
-    auto* headD = new QLabel("德国");
-    m_npLabelD  = new QLabel("0");
-    m_oilLabelD = new QLabel("0");
-    m_apLabelD  = new QLabel("0");
-    m_rpLabelD  = new QLabel("0");
-
-    grid->addWidget(headD, 1, 1);
+    // 德国行
+    grid->addWidget(new QLabel("德国"), 1, 1);
+    m_npLabelD  = new QLabel(QString::number(m_npD));
+    m_oilLabelD = new QLabel(QString::number(m_oilD));
+    m_apLabelD  = new QLabel(QString::number(m_apD));
+    m_rpLabelD  = new QLabel(QString::number(m_rpD));
     grid->addWidget(m_npLabelD, 1, 2);
     grid->addWidget(m_oilLabelD, 1, 3);
     grid->addWidget(m_apLabelD, 1, 4);
     grid->addWidget(m_rpLabelD, 1, 5);
 
-    // ===== 苏联行 =====
-    auto* headS = new QLabel("苏联");
-    m_npLabelS  = new QLabel("0");
-    m_oilLabelS = new QLabel("0");
-    m_apLabelS  = new QLabel("0");
-    m_rpLabelS  = new QLabel("0");
-
-    grid->addWidget(headS, 2, 1);
+    // 苏联行
+    grid->addWidget(new QLabel("苏联"), 2, 1);
+    m_npLabelS  = new QLabel(QString::number(m_npS));
+    m_oilLabelS = new QLabel(QString::number(m_oilS));
+    m_apLabelS  = new QLabel(QString::number(m_apS));
+    m_rpLabelS  = new QLabel(QString::number(m_rpS));
     grid->addWidget(m_npLabelS, 2, 2);
     grid->addWidget(m_oilLabelS, 2, 3);
     grid->addWidget(m_apLabelS, 2, 4);
@@ -386,12 +440,10 @@ void MainWindow::setupStatusDock()
 
     m_dockManager->addDockWidget(ads::TopDockWidgetArea, statusDock);
 
-    refreshStatusUI();
-
-    QAction *apAction = statusDock->toggleViewAction();
-    apAction->setIcon(QIcon(":/res/status.png"));
-    apAction->setText("状态");
-    ui->menuView->addAction(apAction);
+    QAction *statusAction = statusDock->toggleViewAction();
+    statusAction->setIcon(QIcon(":/res/status.png"));
+    statusAction->setText("状态");
+    ui->menuView->addAction(statusAction);
 
     statusDock->toggleView(false);
 }
@@ -433,15 +485,19 @@ void MainWindow::addOil(Side side, int delta)
     refreshStatusUI();
 }
 
+void MainWindow::addReadyPoints(Side side, int delta)
+{
+    if (side == Side::D) m_rpD += delta;
+    else if (side == Side::S) m_rpS += delta;
+    refreshStatusUI();
+}
+
 void MainWindow::addActionPoints(Side side, int delta)
 {
     if (side == Side::D) m_apD += delta;
     else if (side == Side::S) m_apS += delta;
 
-    if (m_apLabelD) m_apLabelD->setText(QString::number(m_apD));
-    if (m_apLabelS) m_apLabelS->setText(QString::number(m_apS));
-
-    const QString who = (side == Side::D ? "德国" : "苏联");    
+    const QString who = (side == Side::D ? "德国" : "苏联");
     appendLog(QString("%1行动点 %2%3，当前：D=%4 S=%5\n")
               .arg(who)
               .arg(delta >= 0 ? "+" : "")
@@ -449,13 +505,6 @@ void MainWindow::addActionPoints(Side side, int delta)
               .arg(m_apD)
               .arg(m_apS), Qt::black, true);
 
-    refreshStatusUI();
-}
-
-void MainWindow::addReadyPoints(Side side, int delta)
-{
-    if (side == Side::D) m_rpD += delta;
-    else if (side == Side::S) m_rpS += delta;
     refreshStatusUI();
 }
 
