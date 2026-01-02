@@ -3,11 +3,11 @@
 #include <QObject>
 #include <QGraphicsPixmapItem>
 #include "util.h"
-#include "placementmanager.h"
 
 inline constexpr int PieceType = QGraphicsItem::UserType + 200;
 
 class RegionItem;
+class PlacementManager;
 
 class PieceItem : public QObject, public QGraphicsPixmapItem
 {
@@ -45,8 +45,6 @@ protected:
     void contextMenuEvent(QGraphicsSceneContextMenuEvent* e) override;
 
 private:
-    void relayoutRegion(RegionItem* regionItem);
-
     int m_regionId = -1;
     bool m_inLayout = false;
 

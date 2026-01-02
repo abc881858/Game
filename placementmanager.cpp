@@ -43,7 +43,7 @@ void PlacementManager::removePieceItem(PieceItem* piece)
 
 void PlacementManager::movePieceToRegion(PieceItem* piece, int newRegionId)
 {
-    const int old = piece->regionId(); // 最小改动
+    const int old = piece->regionId();
     if (old == newRegionId) {
         relayoutRegion(newRegionId);
         return;
@@ -55,7 +55,7 @@ void PlacementManager::movePieceToRegion(PieceItem* piece, int newRegionId)
         relayoutRegion(old);
     }
 
-    piece->setRegionId(newRegionId); // 最小改动
+    piece->setRegionId(newRegionId);
     m_piecesInRegion[newRegionId].push_back(piece);
     relayoutRegion(newRegionId);
 }
@@ -64,22 +64,51 @@ QList<QPointF> PlacementManager::makeOffsets(int n, qreal w, qreal h, qreal gap)
 {
     QList<QPointF> off;
     if (n <= 0) return off;
-    if (n == 1) return { {0,0} };
-    if (n == 2) return { {-(w+gap)/2,0}, {+(w+gap)/2,0} };
 
+    if (n == 1) {
+        off << QPointF(0, 0);
+        return off;
+    }
+
+    if (n == 2) {
+        off << QPointF(-(w+gap)/2, 0)
+            << QPointF( +(w+gap)/2, 0);
+        return off;
+    }
+
+    if (n == 3) {
+        // ✅ 品字形：上 1 下 2
+        off << QPointF(0, -(h+gap)/2)
+            << QPointF(-(w+gap)/2, +(h+gap)/2)
+            << QPointF( +(w+gap)/2, +(h+gap)/2);
+        return off;
+    }
+
+    if (n == 4) {
+        // ✅ 2x2
+        off << QPointF(-(w+gap)/2, -(h+gap)/2)
+            << QPointF( +(w+gap)/2, -(h+gap)/2)
+            << QPointF(-(w+gap)/2, +(h+gap)/2)
+            << QPointF( +(w+gap)/2, +(h+gap)/2);
+        return off;
+    }
+
+    // n>4：尽量方形网格
     int cols = qCeil(qSqrt(n));
-    int rows = qCeil(double(n)/cols);
-    qreal totalW = cols*w + (cols-1)*gap;
-    qreal totalH = rows*h + (rows-1)*gap;
+    int rows = qCeil(double(n) / cols);
 
-    int k=0;
-    for (int r=0; r<rows && k<n; ++r) {
-        for (int c=0; c<cols && k<n; ++c, ++k) {
+    qreal totalW = cols * w + (cols - 1) * gap;
+    qreal totalH = rows * h + (rows - 1) * gap;
+
+    int k = 0;
+    for (int r = 0; r < rows && k < n; ++r) {
+        for (int c = 0; c < cols && k < n; ++c, ++k) {
             qreal x = -totalW/2 + c*(w+gap) + w/2;
             qreal y = -totalH/2 + r*(h+gap) + h/2;
-            off << QPointF(x,y);
+            off << QPointF(x, y);
         }
     }
+
     return off;
 }
 
@@ -93,9 +122,12 @@ void PlacementManager::relayoutRegion(int regionId)
 
     std::sort(vec.begin(), vec.end(), [](PieceItem* a, PieceItem* b){ return a < b; });
 
-    qreal w = vec.first()->boundingRect().width();
-    qreal h = vec.first()->boundingRect().height();
-    qreal gap = 8.0;
+    qreal w = 0, h = 0;
+    for (auto* p : vec) {
+        w = qMax(w, p->boundingRect().width());
+        h = qMax(h, p->boundingRect().height());
+    }
+    qreal gap = 0.0; // 不够就调大点，比如 8
 
     const auto offsets = makeOffsets(vec.size(), w, h, gap);
     const QPointF center = r->centerScene();
