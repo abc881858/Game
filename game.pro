@@ -9,6 +9,7 @@ SOURCES += \
     graphicsview.cpp \
     main.cpp \
     mainwindow.cpp \
+    mapgraph.cpp \
     navprogress.cpp \
     pieceentrywidget.cpp \
     pieceitem.cpp \
@@ -24,6 +25,7 @@ HEADERS += \
     graphicsframe.h \
     graphicsview.h \
     mainwindow.h \
+    mapgraph.h \
     navprogress.h \
     pieceentrywidget.h \
     pieceitem.h \

@@ -5,7 +5,6 @@
 #include <QDebug>
 
 #include "placementmanager.h"
-#include "pieceitem.h"
 #include "util.h"
 
 static inline bool isActionTokenPath(const QString& pixPath)
@@ -26,6 +25,8 @@ PieceItem* GameController::createPieceFromPixPath(const QString& pixPath)
     if (pm.isNull()) return nullptr;
 
     auto* item = new PieceItem(pm);
+
+    connect(item, &PieceItem::movedRegionToRegion, this, &GameController::onPieceMovedRegionToRegion);
 
     // meta
     Side side;
@@ -58,21 +59,31 @@ void GameController::onPieceDropped(const QString& pixPath,
 
 void GameController::onActionTokenDropped(const QString& pixPath)
 {
-    // 行动签效果：交给 MainWindow 改状态（你已有 addActionPoints）
     if (!isActionTokenPath(pixPath)) return;
 
     Side side = Side::Unknown;
     if (pixPath.startsWith(":/D/")) side = Side::D;
     else if (pixPath.startsWith(":/S/")) side = Side::S;
 
+    if (!canPlayActionToken(side)) {
+       emit logLine("当前不能打出该方行动签。\n", Qt::black, true);
+       return;
+    }
+
     int ap = 0;
     if (pixPath.contains("XDQ2")) ap = 2;
     else if (pixPath.contains("XDQ6")) ap = 6;
 
-    if (side == Side::Unknown || ap == 0) return;
+    if (ap == 0) return;
 
+    // ✅ 打出行动签：进入行动阶段（你已有逻辑在 MainWindow::addActionPoints 里）
     emit actionPointsDelta(side, ap);
-    emit logLine(QString("行动签：%1 AP +%2\n").arg(side==Side::D ? "德国" : "苏联").arg(ap), Qt::black, true);
+
+    // ✅ 行动签打出后，把“下一次可打行动签的一方”切给对方（如果你规则是轮流）
+    m_nextSideToPlayToken = (side == Side::D) ? Side::S : Side::D;
+
+    emit logLine(QString("行动签：%1 AP +%2\n").arg(side==Side::D ? "德国" : "苏联").arg(ap),
+                 Qt::black, true);
 }
 
 void GameController::onSplitRequested(PieceItem* piece, int a, int b)
@@ -140,4 +151,188 @@ PieceItem* GameController::placeNewPieceToRegion(int regionId,
     }
 
     return item;
+}
+
+bool GameController::isLargeCorps(PieceItem* p) const
+{
+    // 3-4级算“大兵团”，1-2级算“小兵团”
+    return p && p->level() >= 3;
+}
+
+int GameController::moveCost(PieceItem* p, int distance) const
+{
+    // 10.2：距离0按距离1算
+    int d = (distance <= 0 ? 1 : distance);
+
+    if (isLargeCorps(p)) {
+        // 大兵团：每距离1消耗1AP
+        return d;
+    } else {
+        // 小兵团：每距离2消耗1AP，距离1也要1AP
+        // 等价：ceil(d / 2.0)
+        return (d + 1) / 2;
+    }
+}
+
+QSet<int> GameController::buildBlockedNodesForSide(Side moverSide) const
+{
+    QSet<int> blocked;
+    if (!m_placementManager) return blocked;
+
+    // “只能进入没有敌方兵团或要塞的格”
+    // 这里先按“敌方兵团存在则阻挡”，要塞你之后做 PieceKind::Fortress 再加上。
+    for (int rid = 0; rid < 35; ++rid) {
+        const auto pieces = m_placementManager->piecesInRegion(rid);
+        for (auto* p : pieces) {
+            if (!p) continue;
+            if (p->kind() == PieceKind::Corps && p->side() != moverSide) {
+                blocked.insert(rid);
+                break;
+            }
+            if (p->kind() == PieceKind::Fortress && p->side() != moverSide) {
+                blocked.insert(rid);
+                break;
+            }
+        }
+    }
+    return blocked;
+}
+
+void GameController::resetAllPiecesMoveFlag()
+{
+    if (!m_scene) return;
+    for (auto* gi : m_scene->items()) {
+        if (gi->type() != PieceType) continue;
+        auto* p = static_cast<PieceItem*>(gi);
+        p->setMovedThisActionPhase(false);
+    }
+}
+
+void GameController::refreshMovablePieces()
+{
+    if (!m_scene) return;
+
+    const int ap = apOf(m_activeSide);
+
+    for (auto* gi : m_scene->items()) {
+        if (gi->type() != PieceType) continue;
+
+        auto* p = static_cast<PieceItem*>(gi);
+
+        bool movable =
+            m_actionActive &&
+            m_inMoveSegment &&
+            (m_activeSide != Side::Unknown) &&
+            (p->kind() == PieceKind::Corps) &&
+            (p->side() == m_activeSide) &&
+            (ap > 0);
+
+        // 如果你实现了“进入敌占格后本阶段不能再动”
+        if (movable && p->movedThisActionPhase())
+            movable = false;
+
+        p->setFlag(QGraphicsItem::ItemIsMovable, movable);
+        p->setFlag(QGraphicsItem::ItemIsSelectable, true); // 选中可保留
+    }
+}
+
+bool GameController::canDragFromReserve(Side side) const
+{
+    if (side == Side::Unknown) return false;
+
+    // 没进入行动阶段：不允许
+    if (!m_actionActive) return false;
+
+    // 不是陆上移动环节：不允许
+    if (!m_inMoveSegment) return false;
+
+    // 不是当前行动方：不允许
+    if (side != m_activeSide) return false;
+
+    // AP=0：不允许
+    if (apOf(m_activeSide) <= 0) return false;
+
+    return true;
+}
+
+void GameController::onPieceMovedRegionToRegion(PieceItem *piece, int fromRegionId, int toRegionId, Side side)
+{
+    qDebug() << "MOVE SIG" << fromRegionId << toRegionId << int(side)
+             << "actionActive=" << m_actionActive
+             << "inMoveSeg=" << m_inMoveSegment
+             << "activeSide=" << int(m_activeSide);
+
+    if (!piece) return;
+    if (!m_actionActive || !m_inMoveSegment) return;      // 只在“陆上移动环节”生效
+    if (side != m_activeSide) return;                     // 只能当前行动方移动
+    if (!m_placementManager) return;
+
+    // 已因“进入敌占格”被锁住，则回滚
+    if (piece->movedThisActionPhase()) {
+        emit logLine("本行动阶段该兵团已进入敌占格，不能继续移动，已回滚。\n", Qt::black, true);
+        piece->snapToNearestRegion(); // 会回滚到 lastValid（你已有逻辑）
+        return;
+    }
+
+    // 最短路距离（中途不能经过 blocked）
+    QSet<int> blocked = buildBlockedNodesForSide(side);
+    blocked.remove(fromRegionId); // 起点不算阻挡
+    int dist = m_graph.shortestDistance(fromRegionId, toRegionId, blocked);
+    if (dist < 0) {
+        emit logLine("移动失败：无可达陆上路线（可能被敌方兵团/要塞阻挡），已回滚。\n", Qt::black, true);
+        // 回滚到上一次合法位置
+        piece->setInLayout(true);
+        piece->setPos(piece->lastValidPos());
+        piece->setInLayout(false);
+        m_placementManager->movePieceToRegion(piece, fromRegionId);
+        piece->markLastValid(fromRegionId);
+        return;
+    }
+
+    const int cost = moveCost(piece, dist);
+    const int apNow = apOf(side);
+
+    if (apNow < cost) {
+        emit logLine(QString("移动失败：距离=%1 需AP=%2 当前AP=%3，不足，已回滚。\n")
+                     .arg(dist).arg(cost).arg(apNow), Qt::black, true);
+        m_placementManager->movePieceToRegion(piece, fromRegionId);
+        piece->markLastValid(fromRegionId);
+        return;
+    }
+
+    // 扣行动点（用你已有的 actionPointsDelta）
+    emit actionPointsDelta(side, -cost);
+    emit logLine(QString("陆上移动：%1 -> %2 距离=%3 扣AP=%4\n")
+                 .arg(fromRegionId).arg(toRegionId).arg(dist).arg(cost), Qt::black, true);
+
+    // 占领判定：如果进入敌占格，则占领并锁住本阶段继续移动
+    Side owner = m_owner.value(toRegionId, Side::Unknown);
+    if (owner != Side::Unknown && owner != side) {
+        m_owner[toRegionId] = side;
+        piece->setMovedThisActionPhase(true);
+        emit logLine("进入敌占格：占领完成，本行动阶段该兵团不能继续移动。\n", Qt::black, true);
+    } else if (owner == Side::Unknown) {
+        // 没维护过占领方时，至少写入当前方
+        m_owner[toRegionId] = side;
+    }
+
+    // 这次移动成功，更新 lastValid
+    piece->markLastValid(toRegionId);
+}
+
+bool GameController::canPlayActionToken(Side side) const
+{
+    // 未进入行动阶段时，只有 nextSide 可以打行动签
+    if (m_actionActive) return false;
+    if (side == Side::Unknown) return false;
+    return side == m_nextSideToPlayToken;
+}
+
+bool GameController::canDragUnitInMoveSeg(Side side) const
+{
+    if (!m_actionActive) return false;
+    if (!m_inMoveSegment) return false;
+    if (side != m_activeSide) return false;
+    if (apOf(m_activeSide) <= 0) return false;
+    return true;
 }

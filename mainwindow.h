@@ -122,4 +122,7 @@ private:
 
     void refreshActionSegUI();
     void endCurrentActionPhase();
+
+    Side m_nextSideToPlayToken = Side::Unknown;
+    void initFirstPlayerByDice();
 };

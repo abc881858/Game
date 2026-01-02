@@ -3,6 +3,7 @@
 #include <QMimeData>
 #include "pieceentrywidget.h"
 #include "dragdrop.h"
+#include "gamecontroller.h"
 
 PieceListWidget::PieceListWidget(QWidget* parent) : QListWidget(parent)
 {
@@ -31,6 +32,15 @@ void PieceListWidget::startDrag(Qt::DropActions)
 
     const QString pixPath = it->data(Qt::UserRole).toString();
     if (pixPath.isEmpty()) return;
+
+    // ✅ 关键：行动签和单位走不同规则
+    if (m_controller) {
+        if (pixPath.contains("_XDQ", Qt::CaseSensitive)) {
+            if (!m_controller->canPlayActionToken(m_side)) return;
+        } else {
+            if (!m_controller->canDragUnitInMoveSeg(m_side)) return;
+        }
+    }
 
     auto* mime = new QMimeData;
     mime->setData(DragDrop::MimePiece, pixPath.toUtf8());

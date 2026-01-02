@@ -24,6 +24,8 @@ public:
 
     void relayoutRegion(int regionId); // 只重排一个区域
 
+    QList<PieceItem*> piecesInRegion(int regionId) const;
+
 private:
     QGraphicsScene* m_scene{};
     QHash<int, RegionItem*> m_regions;

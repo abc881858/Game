@@ -80,8 +80,11 @@ MainWindow::MainWindow(QWidget *parent)
     initRegionItems();
     initPieceLists();
     initGameBoardPieces();
+    m_gameController->refreshMovablePieces();
     initEventActions();
     refreshStatusUI();
+
+    QTimer::singleShot(0, this, &MainWindow::initFirstPlayerByDice);
 }
 
 MainWindow::~MainWindow()
@@ -167,13 +170,18 @@ void MainWindow::initControllers()
     connect(m_gameController, &GameController::actionPointsDelta, this, &MainWindow::addActionPoints);
     connect(m_gameController, &GameController::logLine, this, &MainWindow::appendLog);
 
-
     connect(actEndSeg, &QAction::triggered, this, [this]{
         if (!m_actionPhase.active) return;
 
         if (m_actionPhase.segIndex < 4) {
             m_actionPhase.segIndex++;
             m_actionPhase.seg = ActionSeg(m_actionPhase.segIndex);
+
+            m_gameController->setActionPhaseActive(m_actionPhase.active);
+            m_gameController->setActionActiveSide(m_actionPhase.activeSide);
+            m_gameController->setInMoveSegment(m_actionPhase.active && m_actionPhase.seg == ActionSeg::Move);
+            m_gameController->refreshMovablePieces();
+
             m_navProgress->setCurrentStep(m_actionPhase.segIndex + 1);
             switch (m_actionPhase.segIndex) {
             case 1:
@@ -312,6 +320,12 @@ void MainWindow::initPieceLists()
 {
     pieceListWidget_D = createPieceList(ui->D_DMQ);
     pieceListWidget_S = createPieceList(ui->S_DMQ);
+
+    pieceListWidget_D->setSide(Side::D);
+    pieceListWidget_S->setSide(Side::S);
+
+    pieceListWidget_D->setGameController(m_gameController);
+    pieceListWidget_S->setGameController(m_gameController);
 
     using Def = std::tuple<const char*, const char*, int>;
 
@@ -547,6 +561,11 @@ void MainWindow::addActionPoints(Side side, int delta)
 
     refreshStatusUI();
 
+    // 新进入行动阶段时，重置所有兵团“本阶段是否被锁住继续移动”
+    if (m_actionPhase.active && m_actionPhase.seg == ActionSeg::Move && m_actionPhase.segIndex == 0) {
+        m_gameController->resetAllPiecesMoveFlag();
+    }
+
     if (!m_actionPhase.active) {
         m_actionPhase.active = true;
         m_actionPhase.activeSide = side;
@@ -560,6 +579,14 @@ void MainWindow::addActionPoints(Side side, int delta)
 
         refreshActionSegUI();
     }
+
+    // ===== 同步给 GameController（必须）=====
+    m_gameController->setCurrentAP(Side::D, m_apD);
+    m_gameController->setCurrentAP(Side::S, m_apS);
+    m_gameController->setActionPhaseActive(m_actionPhase.active);
+    m_gameController->setActionActiveSide(m_actionPhase.activeSide);
+    m_gameController->setInMoveSegment(m_actionPhase.active && m_actionPhase.seg == ActionSeg::Move);
+    m_gameController->refreshMovablePieces();
 }
 
 void MainWindow::appendLog(const QString& line, const QColor& color, bool newLine)
@@ -587,17 +614,65 @@ void MainWindow::refreshActionSegUI()
 
 void MainWindow::endCurrentActionPhase()
 {
-    // 行动步骤结束：剩余行动点清零（规则9.5）
-    if (m_actionPhase.activeSide == Side::D) m_apD = 0;
-    if (m_actionPhase.activeSide == Side::S) m_apS = 0;
+    // ✅ 先记住本次行动方（因为下面要清空）
+    const Side finishedSide = m_actionPhase.activeSide;
 
+    // 行动步骤结束：剩余行动点清零（规则9.5）
+    if (finishedSide == Side::D) m_apD = 0;
+    if (finishedSide == Side::S) m_apS = 0;
+
+    // ✅ 轮流行动签：下一方 = 对方
+    Side nextSide = Side::Unknown;
+    if (finishedSide == Side::D) nextSide = Side::S;
+    else if (finishedSide == Side::S) nextSide = Side::D;
+
+    // ===== 下面是你原来的清状态 =====
     m_actionPhase.active = false;
     m_actionPhase.activeSide = Side::Unknown;
     m_actionPhase.segIndex = 0;
     m_actionPhase.seg = ActionSeg::Move;
 
+    // ===== 同步给 controller =====
+    m_gameController->setActionPhaseActive(false);
+    m_gameController->setInMoveSegment(false);
+    m_gameController->setActionActiveSide(Side::Unknown);
+
+    m_gameController->setCurrentAP(Side::D, m_apD);
+    m_gameController->setCurrentAP(Side::S, m_apS);
+
+    // ✅ 关键：告诉 controller 下一张行动签允许谁打
+    m_gameController->setNextSideToPlayToken(nextSide);
+
+    // ✅ 刷新：场上棋子不可拖；待命区只有 nextSide 的行动签可拖
+    m_gameController->refreshMovablePieces();
+
     refreshStatusUI();
     refreshActionSegUI();
 
-    appendLog("行动点清零，等待下一方打出行动签。\n", Qt::black, true);
+    appendLog(QString("行动阶段结束：下一张行动签由【%1】打出。\n")
+              .arg(nextSide==Side::D ? "德国" : "苏联"),
+              Qt::black, true);
+}
+
+void MainWindow::initFirstPlayerByDice()
+{
+    int d = QRandomGenerator::global()->bounded(1, 7);
+    int s = QRandomGenerator::global()->bounded(1, 7);
+
+    appendLog(QString("开局先手判定：德国掷骰=%1，苏联掷骰=%2\n").arg(d).arg(s),
+              Qt::black, true);
+
+    if (d == s) {
+        appendLog("平局：重新掷骰。\n", Qt::black, true);
+        QTimer::singleShot(0, this, &MainWindow::initFirstPlayerByDice);
+        return;
+    }
+
+    m_nextSideToPlayToken = (d > s) ? Side::D : Side::S;
+    appendLog(QString("先手：%1（请拖动该方行动签开始行动阶段）\n")
+              .arg(m_nextSideToPlayToken==Side::D ? "德国" : "苏联"),
+              Qt::black, true);
+
+    // ✅ 同步给 controller：谁可以打出行动签
+    m_gameController->setNextSideToPlayToken(m_nextSideToPlayToken);
 }

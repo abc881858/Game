@@ -40,6 +40,9 @@ public:
     void setInLayout(bool v) { m_inLayout = v; }
     bool inLayout() const { return m_inLayout; }
 
+    QPointF lastValidPos() const { return m_lastValidPos; }
+    int lastValidRegionId() const { return m_lastValidRegionId; }
+
 protected:
     void mouseReleaseEvent(QGraphicsSceneMouseEvent* e) override;
     void contextMenuEvent(QGraphicsSceneContextMenuEvent* e) override;
@@ -63,6 +66,13 @@ private:
     PlacementManager* m_placementManager = nullptr;
 
 signals:
-    void movedRegionToRegion(int fromRegionId, int toRegionId, Side side);
+    void movedRegionToRegion(PieceItem* piece, int fromRegionId, int toRegionId, Side side);
     void splitRequested(PieceItem* piece, int a, int b);
+
+public:
+    bool movedThisActionPhase() const { return m_movedThisActionPhase; }
+    void setMovedThisActionPhase(bool v) { m_movedThisActionPhase = v; }
+
+private:
+    bool m_movedThisActionPhase = false;
 };

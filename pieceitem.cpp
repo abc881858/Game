@@ -54,8 +54,10 @@ void PieceItem::snapToNearestRegion() {
     m_lastValidRegionId = hitId;
     m_lastValidPos = pos();
 
+    qDebug() << "snapToNearestRegion oldId hitId" << oldId << hitId;
+
     if (oldId >= 0 && oldId != hitId) {
-        emit movedRegionToRegion(oldId, hitId, m_side);
+        emit movedRegionToRegion(this, oldId, hitId, m_side);
     }
 }
 

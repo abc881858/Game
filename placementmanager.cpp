@@ -141,3 +141,8 @@ void PlacementManager::relayoutRegion(int regionId)
         p->setInLayout(false);
     }
 }
+
+QList<PieceItem*> PlacementManager::piecesInRegion(int regionId) const
+{
+    return m_piecesInRegion.value(regionId);
+}
