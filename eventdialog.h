@@ -15,7 +15,7 @@ public:
     void addEventPiece(const QString& name, const QString& pixResPath, int count);
 
 public slots:
-    void onEventPiecePlaced(const QString& eventId, const QString& pixPath, int slotId);
+    void onEventPiecePlaced(const QString& eventId, const QString& pixPath, int);
 
 private:
     QString m_eventId;

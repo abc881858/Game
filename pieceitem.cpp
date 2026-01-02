@@ -1,13 +1,12 @@
 #include "pieceitem.h"
-#include "cityslotitem.h"
+#include "regionitem.h"
 #include <QGraphicsScene>
 #include <QGraphicsSceneMouseEvent>
-#include <QLineF>
+#include <QGraphicsSceneContextMenuEvent>
 #include <QtMath>
 #include <QMenu>
-#include <QGraphicsSceneContextMenuEvent>
 
-static QVector<QPair<int,int>> splitOptions(int level)
+static QList<QPair<int,int>> splitOptions(int level)
 {
     // 返回 (a,b) 表示 level -> a + b
     switch (level) {
@@ -18,10 +17,10 @@ static QVector<QPair<int,int>> splitOptions(int level)
     }
 }
 
-static QVector<QPointF> makeOffsets(int n, qreal w, qreal h, qreal gap)
+static QList<QPointF> makeOffsets(int n, qreal w, qreal h, qreal gap)
 {
     // offset 是相对“城市中心点”的偏移（单位：scene）
-    QVector<QPointF> off;
+    QList<QPointF> off;
     if (n <= 0) return off;
 
     if (n == 1) {
@@ -71,47 +70,47 @@ PieceItem::PieceItem(const QPixmap& pm) : QGraphicsPixmapItem(pm)
 void PieceItem::mouseReleaseEvent(QGraphicsSceneMouseEvent* e)
 {
     QGraphicsPixmapItem::mouseReleaseEvent(e);
-    if (!m_inLayout) snapToNearestCity();
+    if (!m_inLayout) snapToNearestRegion();
 }
 
-void PieceItem::snapToNearestCity() {
-    if (!scene() || !m_slots) return;
+void PieceItem::snapToNearestRegion() {
+    if (!scene() || !m_placementManager) return;
 
     const QPointF center = mapToScene(boundingRect().center());
-    const int hitId = m_slots->hitTestSlotId(center);
+    const int hitId = m_placementManager->hitTestRegionId(center);
 
     if (hitId < 0) {
         // 回滚到上次有效位置
-        if (m_lastValidSlotId >= 0) {
+        if (m_lastValidRegionId >= 0) {
             setInLayout(true);
             setPos(m_lastValidPos);
             setInLayout(false);
-            m_slots->relayout(m_lastValidSlotId);
+            m_placementManager->relayoutRegion(m_lastValidRegionId);
         }
         return;
     }
 
-    const int oldId = m_slotId;
-    m_slots->movePieceToSlot(this, hitId);
+    const int oldId = m_regionId;
+    m_placementManager->movePieceToRegion(this, hitId);
 
-    m_lastValidSlotId = hitId;
+    m_lastValidRegionId = hitId;
     m_lastValidPos = pos();
 
     if (oldId >= 0 && oldId != hitId) {
-        emit movedCityToCity(oldId, hitId, m_side);
+        emit movedRegionToRegion(oldId, hitId, m_side);
     }
 }
 
-void PieceItem::relayoutSlot(CitySlotItem* slot)
+void PieceItem::relayoutRegion(RegionItem* regionItem)
 {
-    if (!scene() || !slot) return;
+    if (!scene() || !regionItem) return;
 
     // 找出“属于该城市”的所有棋子
     QList<PieceItem*> pieces;
     for (auto* it : scene()->items()) {
         if (it->type() != PieceType) continue;
         auto* p = static_cast<PieceItem*>(it);
-        if (p->slotId() == slot->id()) pieces << p;
+        if (p->regionId() == regionItem->id()) pieces << p;
     }
 
     if (pieces.isEmpty()) return;
@@ -127,7 +126,7 @@ void PieceItem::relayoutSlot(CitySlotItem* slot)
     qreal gap = 8.0; // 间距（scene单位）自行调
 
     auto offsets = makeOffsets(pieces.size(), w, h, gap);
-    QPointF center = slot->centerScene();
+    QPointF center = regionItem->centerScene();
 
     // 布局
     for (int i = 0; i < pieces.size(); ++i) {
@@ -156,7 +155,7 @@ void PieceItem::contextMenuEvent(QGraphicsSceneContextMenuEvent* e)
         return;
     }
 
-    if(m_slotId < 0) {
+    if(m_regionId < 0) {
         QGraphicsPixmapItem::contextMenuEvent(e);
         return;
     }
@@ -164,14 +163,13 @@ void PieceItem::contextMenuEvent(QGraphicsSceneContextMenuEvent* e)
     QGraphicsScene* sc = scene();
     if (!sc) { e->ignore(); return; }
 
-    // ✅ 先把所在城市 slot 指针找出来并缓存（非常关键）
-    CitySlotItem* slotPtr = nullptr;
+    RegionItem* regionItem = nullptr;
     for (auto* it : sc->items()) {
-        if (it->type() != CitySlotType) continue;
-        auto* s = static_cast<CitySlotItem*>(it);
-        if (s->id() == m_slotId) { slotPtr = s; break; }
+        if (it->type() != RegionType) continue;
+        auto* s = static_cast<RegionItem*>(it);
+        if (s->id() == m_regionId) { regionItem = s; break; }
     }
-    if (!slotPtr) { e->ignore(); return; }
+    if (!regionItem) { e->ignore(); return; }
 
     QMenu menu;
     auto opts = splitOptions(m_level);

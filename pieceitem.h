@@ -3,11 +3,11 @@
 #include <QObject>
 #include <QGraphicsPixmapItem>
 #include "util.h"
-#include "slotmanager.h"
+#include "placementmanager.h"
 
 inline constexpr int PieceType = QGraphicsItem::UserType + 200;
 
-class CitySlotItem;
+class RegionItem;
 
 class PieceItem : public QObject, public QGraphicsPixmapItem
 {
@@ -29,45 +29,42 @@ public:
 
     int type() const override { return PieceType; }
 
-    int slotId() const { return m_slotId; }
-    void setSlotId(int id) { m_slotId = id; }
-    void snapToNearestCity();
+    int regionId() const { return m_regionId; }
+    void setRegionId(int id) { m_regionId = id; }
+    void snapToNearestRegion();
 
-    void setSlotManager(SlotManager* mgr) { m_slots = mgr; }
-    SlotManager* slotManager() const { return m_slots; }
-    void markLastValid(int slotId) { m_lastValidSlotId = slotId; m_lastValidPos = pos(); }
+    void setPlacementManager(PlacementManager* placementManager) { m_placementManager = placementManager; }
+    PlacementManager* placementManager() const { return m_placementManager; }
+    void markLastValid(int regionId) { m_lastValidRegionId = regionId; m_lastValidPos = pos(); }
+
+    void setInLayout(bool v) { m_inLayout = v; }
+    bool inLayout() const { return m_inLayout; }
 
 protected:
     void mouseReleaseEvent(QGraphicsSceneMouseEvent* e) override;
     void contextMenuEvent(QGraphicsSceneContextMenuEvent* e) override;
 
 private:
-    void relayoutSlot(CitySlotItem* slot);
+    void relayoutRegion(RegionItem* regionItem);
 
-    int m_slotId = -1;
+    int m_regionId = -1;
     bool m_inLayout = false;
 
     qreal snapRadius = 100.0; // 吸附半径（scene单位）
 
-    int m_lastValidSlotId = -1;
+    int m_lastValidRegionId = -1;
     QPointF m_lastValidPos;
 
     UnitKind m_kind = UnitKind::Other;
     int m_level = 0;
     QString m_pixPath;
 
-    CitySlotItem* m_slot = nullptr; // 当前所在格（没有则 nullptr）
+    RegionItem* m_regionItem = nullptr; // 当前所在格（没有则 nullptr）
     Side m_side = Side::Unknown;    // 你 setUnitMeta 时保存的阵营
 
-    SlotManager* m_slots = nullptr;
-
-public:
-    void setInLayout(bool v) { m_inLayout = v; }
-    bool inLayout() const { return m_inLayout; }
+    PlacementManager* m_placementManager = nullptr;
 
 signals:
-    void movedCityToCity(int fromSlotId, int toSlotId, Side side);
-
-    // ✅ 新增：拆分请求（把业务交给 controller）
+    void movedRegionToRegion(int fromRegionId, int toRegionId, Side side);
     void splitRequested(PieceItem* piece, int a, int b);
 };

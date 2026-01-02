@@ -1,20 +1,13 @@
 #include "graphicsview.h"
-
 #include <QWheelEvent>
 #include <QMouseEvent>
 #include <QRubberBand>
 #include <QDebug>
-
 #include <QDragEnterEvent>
 #include <QDropEvent>
-#include <QGraphicsPixmapItem>
-
 #include "graphicsframe.h"
-#include "pieceitem.h"
-#include "cityslotitem.h"
-#include "util.h"
 #include "dragdrop.h"
-#include "slotmanager.h"
+#include "placementmanager.h"
 
 inline bool isActionTokenPath(const QString& pixPath)
 {
@@ -156,7 +149,6 @@ void GraphicsView::dropEvent(QDropEvent *e)
 
     const QPointF scenePos = mapToScene(e->position().toPoint());
 
-    // 1) 行动签：不需要命中城市格
     if (isNormal && pixPath.contains("_XDQ", Qt::CaseSensitive)) {
         if (scene()->sceneRect().contains(scenePos)) {
             emit actionTokenDropped(pixPath);
@@ -168,13 +160,12 @@ void GraphicsView::dropEvent(QDropEvent *e)
         return;
     }
 
-    // 2) 普通棋子/事件棋子：必须命中 slot
-    if (!m_slotMgr) { e->ignore(); return; }
+    if (!m_placementManager) { e->ignore(); return; }
 
-    const int slotId = m_slotMgr->hitTestSlotId(scenePos);
-    if (slotId < 0) { e->ignore(); return; }
+    const int regionId = m_placementManager->hitTestRegionId(scenePos);
+    if (regionId < 0) { e->ignore(); return; }
 
-    emit pieceDropped(pixPath, eventId, slotId, isEvent);
+    emit pieceDropped(pixPath, eventId, regionId, isEvent);
 
     e->setDropAction(Qt::MoveAction);
     e->accept();

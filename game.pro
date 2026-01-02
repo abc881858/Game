@@ -12,11 +12,11 @@ SOURCES += \
     pieceentrywidget.cpp \
     pieceitem.cpp \
     piecelistwidget.cpp \
-    slotmanager.cpp \
+    placementmanager.cpp \
+    regionitem.cpp \
     util.cpp
 
 HEADERS += \
-    cityslotitem.h \
     dragdrop.h \
     eventdialog.h \
     gamecontroller.h \
@@ -26,7 +26,8 @@ HEADERS += \
     pieceentrywidget.h \
     pieceitem.h \
     piecelistwidget.h \
-    slotmanager.h \
+    placementmanager.h \
+    regionitem.h \
     util.h
 
 FORMS += \

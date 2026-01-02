@@ -1,6 +1,5 @@
 #include "pieceentrywidget.h"
 #include <QHBoxLayout>
-#include <QPixmap>
 
 PieceEntryWidget::PieceEntryWidget(const QIcon& icon, const QString& name, QWidget* parent)
     : QWidget(parent)

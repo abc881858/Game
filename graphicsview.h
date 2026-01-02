@@ -6,7 +6,7 @@
 
 class GraphicsFrame;
 class QRubberBand;
-class SlotManager;
+class PlacementManager;
 
 class GraphicsView : public QGraphicsView
 {
@@ -14,9 +14,9 @@ class GraphicsView : public QGraphicsView
 
 public:
     explicit GraphicsView(GraphicsFrame *graphicsFrame);
-    void setEventDropSlots(const QSet<int>& allowedSlotIds) { eventAllowedSlotIds = allowedSlotIds; }
-    void clearEventDropSlots() { eventAllowedSlotIds.clear(); }
-    void setSlotManager(SlotManager* mgr) { m_slotMgr = mgr; }
+    void setEventDropRegions(const QSet<int>& allowedRegionIds) { eventAllowedRegionIds = allowedRegionIds; }
+    void clearEventDropRegions() { eventAllowedRegionIds.clear(); }
+    void setPlacementManager(PlacementManager* placementManager) { m_placementManager = placementManager; }
 
 protected:
     void wheelEvent(QWheelEvent *) override;
@@ -32,15 +32,13 @@ private:
     GraphicsFrame *m_graphicsFrame = nullptr;
     QRubberBand *rubberBand = nullptr;
     bool selecting = false;
-    QPoint origin; // view坐标起点
-    QSet<int> eventAllowedSlotIds;
-    SlotManager* m_slotMgr = nullptr;
+    QPoint origin;
+    QSet<int> eventAllowedRegionIds;
+    PlacementManager* m_placementManager = nullptr;
 
 signals:
-    void eventPiecePlaced(const QString& eventId, const QString& pixPath, int slotId);
-    void piecePlaced(const QString& pixResPath, int slotId);
-    void pieceMovedCityToCity(int fromSlotId, int toSlotId, Side side);
+    void eventPiecePlaced(const QString& eventId, const QString& pixPath, int regionId);
+    void piecePlaced(const QString& pixResPath, int regionId);
     void actionTokenDropped(const QString& pixPath);
-
-    void pieceDropped(const QString& pixPath, const QString& eventId, int slotId, bool isEvent);
+    void pieceDropped(const QString& pixPath, const QString& eventId, int regionId, bool isEvent);
 };

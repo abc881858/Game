@@ -34,7 +34,7 @@ void PieceListWidget::startDrag(Qt::DropActions)
     if (pixPath.isEmpty()) return;
 
     auto* mime = new QMimeData;
-    mime->setData(DragDrop::MimePiece, pixPath.toUtf8());   // ✅ 对齐 GraphicsView
+    mime->setData(DragDrop::MimePiece, pixPath.toUtf8());
 
     auto* drag = new QDrag(this);
     drag->setMimeData(mime);

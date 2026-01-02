@@ -1,6 +1,5 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
-
 #include <QGraphicsPixmapItem>
 #include <QListWidget>
 #include <QListWidgetItem>
@@ -12,15 +11,14 @@
 #include <QRandomGenerator>
 #include <QGridLayout>
 #include <QLabel>
-
-#include "cityslotitem.h"
+#include "regionitem.h"
 #include "pieceitem.h"
 #include "graphicsframe.h"
 #include "eventdialog.h"
 #include "pieceentrywidget.h"
 
 // ======= 小工具：城市格子矩形表 =======
-static QVector<QRectF> buildCityRects()
+static QList<QRectF> buildRegionRects()
 {
     return {
         QRectF(972.46, 1166.95, 198.72, 209.29),  //挪威北部 0 D
@@ -79,7 +77,7 @@ MainWindow::MainWindow(QWidget *parent)
     initControllers();
     initLogDock();
     initStatusDock();
-    initSlots();
+    initRegionItems();
     initPieceLists();
     initGameBoardPieces();
     initEventActions();
@@ -143,20 +141,16 @@ void MainWindow::initScene()
 
 void MainWindow::initControllers()
 {
-    m_slotManager = new SlotManager(scene, this);
-    m_graphicsView->setSlotManager(m_slotManager);
+    m_placementManager = new PlacementManager(scene, this);
+    m_graphicsView->setPlacementManager(m_placementManager);
 
-    m_gameController = new GameController(scene, m_slotManager, this);
+    m_gameController = new GameController(scene, m_placementManager, this);
 
-    connect(m_graphicsView, &GraphicsView::pieceDropped,
-            m_gameController, &GameController::onPieceDropped);
-    connect(m_graphicsView, &GraphicsView::actionTokenDropped,
-            m_gameController, &GameController::onActionTokenDropped);
+    connect(m_graphicsView, &GraphicsView::pieceDropped, m_gameController, &GameController::onPieceDropped);
+    connect(m_graphicsView, &GraphicsView::actionTokenDropped, m_gameController, &GameController::onActionTokenDropped);
 
-    connect(m_gameController, &GameController::actionPointsDelta,
-            this, &MainWindow::addActionPoints);
-    connect(m_gameController, &GameController::logLine,
-            this, &MainWindow::appendLog);
+    connect(m_gameController, &GameController::actionPointsDelta, this, &MainWindow::addActionPoints);
+    connect(m_gameController, &GameController::logLine, this, &MainWindow::appendLog);
 }
 
 void MainWindow::initLogDock()
@@ -181,7 +175,7 @@ void MainWindow::initEventActions()
     // action1：事件投放
     connect(ui->action1, &QAction::triggered, this, [this](){
         QSet<int> allowed = { 2,3,4,5,6,7,8,9,10,11,12,13,16,17,18,19,20,22,23,24,25,26,27,28,31,32,33,34 };
-        m_gameController->setEventAllowedSlots(allowed);
+        m_gameController->setEventAllowedRegions(allowed);
 
         auto* dlg = new EventDialog(this);
 
@@ -189,7 +183,7 @@ void MainWindow::initEventActions()
                 dlg, &EventDialog::onEventPiecePlaced);
 
         connect(dlg, &QDialog::finished, this, [this, dlg](int){
-            m_gameController->clearEventAllowedSlots();
+            m_gameController->clearEventAllowedRegions();
             dlg->deleteLater();
         });
 
@@ -199,14 +193,14 @@ void MainWindow::initEventActions()
     });
 }
 
-void MainWindow::initSlots()
+void MainWindow::initRegionItems()
 {
-    const auto cityRects = buildCityRects();
+    const auto regionRects = buildRegionRects();
 
-    for (int i = 0; i < cityRects.size(); ++i) {
-        auto *slot = new CitySlotItem(i, cityRects[i]);
-        scene->addItem(slot);
-        m_slotManager->addSlot(slot);
+    for (int i = 0; i < regionRects.size(); ++i) {
+        auto *regionItem = new RegionItem(i, regionRects[i]);
+        scene->addItem(regionItem);
+        m_placementManager->addRegionItem(regionItem);
     }
 }
 
@@ -314,35 +308,35 @@ void MainWindow::initPieceLists()
 
 void MainWindow::initGameBoardPieces()
 {
-    spawnPieceToCity(1, ":/D/D_2JBT.png");//挪威北部
-    spawnPieceToCity(2, ":/S/S_2JBT.png");//摩尔曼斯克
-    spawnPieceToCity(6, ":/S/S_F4.png");//列宁格勒
-    spawnPieceToCity(11, ":/D/D_4JBT.png");//波罗的海国家
-    spawnPieceToCity(11, ":/D/D_4JBT.png");//波罗的海国家
-    spawnPieceToCity(14, ":/D/D_4JBT.png");//东普鲁士
-    spawnPieceToCity(16, ":/D/D_4JBT.png");//白俄罗斯
-    spawnPieceToCity(16, ":/D/D_4JBT.png");//白俄罗斯
-    spawnPieceToCity(16, ":/D/D_2JBT.png");//白俄罗斯
-    spawnPieceToCity(21, ":/D/D_2JBT.png");//波兰南部
-    spawnPieceToCity(22, ":/D/D_4JBT.png");//利沃夫
-    spawnPieceToCity(22, ":/D/D_4JBT.png");//利沃夫
-    spawnPieceToCity(23, ":/S/S_4JBT.png");//基辅
-    spawnPieceToCity(28, ":/S/S_4JBT.png");//敖德萨
-    spawnPieceToCity(30, ":/L/L_4JBT.png");//罗马尼亚
-    spawnPieceToCity(30, ":/L/L_3JBT.png");//罗马尼亚
-    spawnPieceToCity(30, ":/D/D_4JBT.png");//罗马尼亚
-    spawnPieceToCity(31, ":/S/S_F4.png");//克里米亚
-    spawnPieceToCity(34, ":/S/S_3JBT.png");//巴库
+    spawnPieceToRegion(1, ":/D/D_2JBT.png");//挪威北部
+    spawnPieceToRegion(2, ":/S/S_2JBT.png");//摩尔曼斯克
+    spawnPieceToRegion(6, ":/S/S_F4.png");//列宁格勒
+    spawnPieceToRegion(11, ":/D/D_4JBT.png");//波罗的海国家
+    spawnPieceToRegion(11, ":/D/D_4JBT.png");//波罗的海国家
+    spawnPieceToRegion(14, ":/D/D_4JBT.png");//东普鲁士
+    spawnPieceToRegion(16, ":/D/D_4JBT.png");//白俄罗斯
+    spawnPieceToRegion(16, ":/D/D_4JBT.png");//白俄罗斯
+    spawnPieceToRegion(16, ":/D/D_2JBT.png");//白俄罗斯
+    spawnPieceToRegion(21, ":/D/D_2JBT.png");//波兰南部
+    spawnPieceToRegion(22, ":/D/D_4JBT.png");//利沃夫
+    spawnPieceToRegion(22, ":/D/D_4JBT.png");//利沃夫
+    spawnPieceToRegion(23, ":/S/S_4JBT.png");//基辅
+    spawnPieceToRegion(28, ":/S/S_4JBT.png");//敖德萨
+    spawnPieceToRegion(30, ":/L/L_4JBT.png");//罗马尼亚
+    spawnPieceToRegion(30, ":/L/L_3JBT.png");//罗马尼亚
+    spawnPieceToRegion(30, ":/D/D_4JBT.png");//罗马尼亚
+    spawnPieceToRegion(31, ":/S/S_F4.png");//克里米亚
+    spawnPieceToRegion(34, ":/S/S_3JBT.png");//巴库
 }
 
 // =====================================================
 // 逻辑函数
 // =====================================================
 
-PieceItem* MainWindow::spawnPieceToCity(int slotId, const QString& pixResPath, qreal z)
+PieceItem* MainWindow::spawnPieceToRegion(int regionId, const QString& pixResPath, qreal z)
 {
     if (!m_gameController) return nullptr;
-    return m_gameController->spawnToSlot(slotId, pixResPath, z);
+    return m_gameController->spawnToRegion(regionId, pixResPath, z);
 }
 
 void MainWindow::on_action_DTZ_triggered()

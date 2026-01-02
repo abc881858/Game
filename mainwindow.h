@@ -2,19 +2,17 @@
 
 #include <QMainWindow>
 #include <QGraphicsScene>
+#include <QLabel>
 #include "DockManager.h"
 #include "piecelistwidget.h"
-#include <QHash>
-#include <QLabel>
 #include "util.h"
-#include "slotmanager.h"
+#include "placementmanager.h"
 #include "gamecontroller.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
 QT_END_NAMESPACE
 
-class CitySlotItem;
 class PieceItem;
 class QTextEdit;
 class GraphicsFrame;
@@ -34,7 +32,7 @@ public:
     void addNationalPower(Side side, int delta);
     void addOil(Side side, int delta);
     void addReadyPoints(Side side, int delta);
-    PieceItem* spawnPieceToCity(int slotId, const QString& pixResPath, qreal z = 20);
+    PieceItem* spawnPieceToRegion(int regionId, const QString& pixResPath, qreal z = 20);
 
 public slots:
     void addActionPoints(Side side, int delta);  // 加/扣行动点
@@ -52,7 +50,7 @@ private:
     void initControllers();
     void initLogDock();
     void initStatusDock();
-    void initSlots();
+    void initRegionItems();
     void initPieceLists();
     void initGameBoardPieces();
     void initEventActions();
@@ -78,7 +76,7 @@ private:
     PieceListWidget *pieceListWidget_S = nullptr;
 
     // Controller
-    SlotManager* m_slotManager = nullptr;
+    PlacementManager* m_placementManager = nullptr;
     GameController* m_gameController = nullptr;
 
     // Log

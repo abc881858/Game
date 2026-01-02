@@ -4,7 +4,7 @@
 #include <QPixmap>
 #include <QDebug>
 
-#include "slotmanager.h"
+#include "placementmanager.h"
 #include "pieceitem.h"
 #include "util.h"
 
@@ -13,17 +13,17 @@ static inline bool isActionTokenPath(const QString& pixPath)
     return pixPath.contains("_XDQ", Qt::CaseSensitive);
 }
 
-GameController::GameController(QGraphicsScene* scene, SlotManager* slotMgr, QObject* parent)
+GameController::GameController(QGraphicsScene* scene, PlacementManager* placementManager, QObject* parent)
     : QObject(parent)
     , m_scene(scene)
-    , m_slotMgr(slotMgr)
+    , m_placementManager(placementManager)
 {
 }
 
-PieceItem* GameController::spawnToSlot(int slotId, const QString& pixPath, qreal z)
+PieceItem* GameController::spawnToRegion(int regionId, const QString& pixPath, qreal z)
 {
-    if (!m_scene || !m_slotMgr) return nullptr;
-    if (slotId < 0) return nullptr;
+    if (!m_scene || !m_placementManager) return nullptr;
+    if (regionId < 0) return nullptr;
 
     // 行动签不应该走这里（初始化也不会用行动签）
     if (isActionTokenPath(pixPath)) return nullptr;
@@ -34,8 +34,8 @@ PieceItem* GameController::spawnToSlot(int slotId, const QString& pixPath, qreal
     item->setZValue(z);
     m_scene->addItem(item);
 
-    m_slotMgr->movePieceToSlot(item, slotId);
-    item->markLastValid(slotId);
+    m_placementManager->movePieceToRegion(item, regionId);
+    item->markLastValid(regionId);
 
     return item;
 }
@@ -55,8 +55,8 @@ PieceItem* GameController::createPieceFromPixPath(const QString& pixPath)
         item->setUnitMeta(UnitKind::Other, Side::Unknown, 0, pixPath);
     }
 
-    // 让 PieceItem 拥有 slotMgr，用于拖动松手吸附/回滚
-    item->setSlotManager(m_slotMgr);
+    // 让 PieceItem 拥有 placementManager/回滚
+    item->setPlacementManager(m_placementManager);
 
     // 让 controller 接住拆分请求（右键菜单）
     connect(item, &PieceItem::splitRequested, this, &GameController::onSplitRequested);
@@ -72,15 +72,15 @@ PieceItem* GameController::createCorpsPiece(Side side, int level)
 
 void GameController::onPieceDropped(const QString& pixPath,
                                    const QString& eventId,
-                                   int slotId,
+                                   int regionId,
                                    bool isEvent)
 {
-    if (!m_scene || !m_slotMgr) return;
+    if (!m_scene || !m_placementManager) return;
 
     // 规则：事件棋子必须在允许格
     if (isEvent) {
-        if (!m_eventAllowedSlots.contains(slotId)) {
-            emit logLine(QString("事件落子失败：slot %1 不在允许列表").arg(slotId), Qt::black, true);
+        if (!m_eventAllowedRegions.contains(regionId)) {
+            emit logLine(QString("事件落子失败：region %1 不在允许列表").arg(regionId), Qt::black, true);
             return;
         }
     }
@@ -94,15 +94,15 @@ void GameController::onPieceDropped(const QString& pixPath,
     item->setZValue(20);
     m_scene->addItem(item);
 
-    // ✅ 统一由 SlotManager 维护归属 + 重排
-    m_slotMgr->movePieceToSlot(item, slotId);
+    // ✅ 统一由 PlacementManager 维护归属 + 重排
+    m_placementManager->movePieceToRegion(item, regionId);
 
     // ✅ 初始化回滚点（第一次拖动松手才能回滚）
-    item->markLastValid(slotId);
+    item->markLastValid(regionId);
 
     // 事件对话框计数扣减
     if (isEvent) {
-        emit eventPiecePlaced(eventId, pixPath, slotId);
+        emit eventPiecePlaced(eventId, pixPath, regionId);
     }
 }
 
@@ -127,15 +127,15 @@ void GameController::onActionTokenDropped(const QString& pixPath)
 
 void GameController::onSplitRequested(PieceItem* piece, int a, int b)
 {
-    if (!piece || !m_scene || !m_slotMgr) return;
+    if (!piece || !m_scene || !m_placementManager) return;
 
-    const int slotId = piece->slotId();
-    if (slotId < 0) return;
+    const int regionId = piece->regionId();
+    if (regionId < 0) return;
 
     const Side side = piece->side();
 
-    // 1) 从 SlotManager 移除（会重排原城市）
-    m_slotMgr->removePiece(piece);
+    // 1) 从 PlacementManager 移除（会重排原城市）
+    m_placementManager->removePieceItem(piece);
 
     // 2) 从 scene 删除旧棋子
     m_scene->removeItem(piece);
@@ -149,15 +149,15 @@ void GameController::onSplitRequested(PieceItem* piece, int a, int b)
         ni->setZValue(20);
         m_scene->addItem(ni);
 
-        m_slotMgr->movePieceToSlot(ni, slotId);
-        ni->markLastValid(slotId);
+        m_placementManager->movePieceToRegion(ni, regionId);
+        ni->markLastValid(regionId);
     };
 
     spawnOne(a);
     spawnOne(b);
 
-    emit logLine(QString("拆分：slot %1  %2 -> %3 + %4")
-                 .arg(slotId)
+    emit logLine(QString("拆分：region %1  %2 -> %3 + %4")
+                 .arg(regionId)
                  .arg(piece->level())
                  .arg(a)
                  .arg(b), Qt::black, true);
