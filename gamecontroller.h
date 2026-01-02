@@ -37,7 +37,7 @@ public slots:
 signals:
     // 给 MainWindow 订阅：扣/加行动点，或者写日志
     void actionPointsDelta(Side side, int delta);
-    void logLine(const QString& line);
+    void logLine(const QString& line, const QColor &color, bool newLine);
 
     // 给 EventDialog 订阅：用于从列表里删掉事件棋子计数
     void eventPiecePlaced(const QString& eventId, const QString& pixPath, int slotId);

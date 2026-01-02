@@ -69,16 +69,8 @@ MainWindow::MainWindow(QWidget *parent)
     connect(m_graphicsView, &GraphicsView::pieceDropped, m_ctrl, &GameController::onPieceDropped);
     connect(m_graphicsView, &GraphicsView::actionTokenDropped, m_ctrl, &GameController::onActionTokenDropped);
 
-    connect(m_ctrl, &GameController::actionPointsDelta, this, [=](Side side, int delta){
-        addActionPoints(side, delta);
-    });
-
-    connect(m_ctrl, &GameController::logLine, this, [=](const QString& s){
-        QTextCursor cursor = logTextEdit->textCursor();
-        cursor.movePosition(QTextCursor::End);
-        cursor.insertText(s + "\n");
-        logTextEdit->setTextCursor(cursor);
-    });
+    connect(m_ctrl, &GameController::actionPointsDelta, this, &MainWindow::addActionPoints);
+    connect(m_ctrl, &GameController::logLine, this, &MainWindow::appendLog);
 
     setupReadyList();
     setupStatusDock();
@@ -300,27 +292,13 @@ void MainWindow::setupReadyList()
 void MainWindow::on_action_DTZ_triggered()
 {
     int num = QRandomGenerator::global()->bounded(1, 7);
-
-    QTextCharFormat fmt;
-    fmt.setForeground(QBrush(Qt::black));
-
-    QTextCursor cursor = logTextEdit->textCursor();
-    cursor.movePosition(QTextCursor::End);
-    cursor.insertText(QString("德国掷骰子：%1\n").arg(num), fmt);
-    logTextEdit->setTextCursor(cursor);
+    appendLog(QString("德国掷骰子：%1\n").arg(num), Qt::black, true);
 }
 
 void MainWindow::on_action_STZ_triggered()
 {
     int num = QRandomGenerator::global()->bounded(1, 7);
-
-    QTextCharFormat fmt;
-    fmt.setForeground(QBrush(QColor(183,100,50)));
-
-    QTextCursor cursor = logTextEdit->textCursor();
-    cursor.movePosition(QTextCursor::End);
-    cursor.insertText(QString("苏联掷骰子：%1\n").arg(num), fmt);
-    logTextEdit->setTextCursor(cursor);
+    appendLog(QString("苏联掷骰子：%1\n").arg(num), QColor(183,100,50), true);
 }
 
 void MainWindow::addPieceD(const QString& name, const QString& pixResPath, int count)
@@ -463,21 +441,13 @@ void MainWindow::addActionPoints(Side side, int delta)
     if (m_apLabelD) m_apLabelD->setText(QString::number(m_apD));
     if (m_apLabelS) m_apLabelS->setText(QString::number(m_apS));
 
-    // 顺便写日志（可选）
-    QTextCharFormat fmt;
-    fmt.setForeground(QBrush(Qt::black));
-    QTextCursor cursor = logTextEdit->textCursor();
-    cursor.movePosition(QTextCursor::End);
-
-    const QString who = (side == Side::D ? "德国" : "苏联");
-    cursor.insertText(QString("%1行动点 %2%3，当前：D=%4 S=%5\n")
-        .arg(who)
-        .arg(delta >= 0 ? "+" : "")
-        .arg(delta)
-        .arg(m_apD)
-        .arg(m_apS), fmt);
-
-    logTextEdit->setTextCursor(cursor);
+    const QString who = (side == Side::D ? "德国" : "苏联");    
+    appendLog(QString("%1行动点 %2%3，当前：D=%4 S=%5\n")
+              .arg(who)
+              .arg(delta >= 0 ? "+" : "")
+              .arg(delta)
+              .arg(m_apD)
+              .arg(m_apS), Qt::black, true);
 
     refreshStatusUI();
 }
@@ -487,4 +457,17 @@ void MainWindow::addReadyPoints(Side side, int delta)
     if (side == Side::D) m_rpD += delta;
     else if (side == Side::S) m_rpS += delta;
     refreshStatusUI();
+}
+
+void MainWindow::appendLog(const QString& line, const QColor& color, bool newLine)
+{
+    if (!logTextEdit) return;
+
+    QTextCharFormat fmt;
+    fmt.setForeground(QBrush(color));
+
+    QTextCursor cursor = logTextEdit->textCursor();
+    cursor.movePosition(QTextCursor::End);
+    cursor.insertText(newLine ? (line + "\n") : line, fmt);
+    logTextEdit->setTextCursor(cursor);
 }

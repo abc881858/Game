@@ -80,7 +80,7 @@ void GameController::onPieceDropped(const QString& pixPath,
     // 规则：事件棋子必须在允许格
     if (isEvent) {
         if (!m_eventAllowedSlots.contains(slotId)) {
-            emit logLine(QString("事件落子失败：slot %1 不在允许列表").arg(slotId));
+            emit logLine(QString("事件落子失败：slot %1 不在允许列表").arg(slotId), Qt::black, true);
             return;
         }
     }
@@ -108,7 +108,6 @@ void GameController::onPieceDropped(const QString& pixPath,
 
 void GameController::onActionTokenDropped(const QString& pixPath)
 {
-    qDebug() << "onActionTokenDropped";
     // 行动签效果：交给 MainWindow 改状态（你已有 addActionPoints）
     if (!isActionTokenPath(pixPath)) return;
 
@@ -123,7 +122,7 @@ void GameController::onActionTokenDropped(const QString& pixPath)
     if (side == Side::Unknown || ap == 0) return;
 
     emit actionPointsDelta(side, ap);
-    emit logLine(QString("行动签：%1 AP +%2").arg(side==Side::D ? "德国" : "苏联").arg(ap));
+    emit logLine(QString("行动签：%1 AP +%2\n").arg(side==Side::D ? "德国" : "苏联").arg(ap), Qt::black, true);
 }
 
 void GameController::onSplitRequested(PieceItem* piece, int a, int b)
@@ -161,5 +160,5 @@ void GameController::onSplitRequested(PieceItem* piece, int a, int b)
                  .arg(slotId)
                  .arg(piece->level())
                  .arg(a)
-                 .arg(b));
+                 .arg(b), Qt::black, true);
 }

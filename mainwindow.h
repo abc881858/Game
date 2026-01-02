@@ -82,6 +82,7 @@ private:
 
 public slots:
     void addActionPoints(Side side, int delta);  // 加/扣行动点
+    void appendLog(const QString &line, const QColor &color, bool newLine);
 
 private slots:
     void on_action_DTZ_triggered();
