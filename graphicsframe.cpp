@@ -83,13 +83,11 @@ void GraphicsFrame::setupMatrix()
 void GraphicsFrame::zoomIn(int level)
 {
     zoomSlider->setValue(zoomSlider->value() + level);
-    // qDebug() << __func__ << level << zoomSlider->value() + level;
 }
 
 void GraphicsFrame::zoomOut(int level)
 {
     zoomSlider->setValue(zoomSlider->value() - level);
-    // qDebug() << __func__ << level << zoomSlider->value() - level;
 }
 
 void GraphicsFrame::resetView()
