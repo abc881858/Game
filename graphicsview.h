@@ -4,7 +4,7 @@
 #include <QSet>
 #include "util.h"
 
-class View;
+class GraphicsFrame;
 class QRubberBand;
 
 class GraphicsView : public QGraphicsView
@@ -12,7 +12,7 @@ class GraphicsView : public QGraphicsView
     Q_OBJECT
 
 public:
-    explicit GraphicsView(View *v);
+    explicit GraphicsView(GraphicsFrame *graphicsFrame);
 
     void setEventDropSlots(const QSet<int>& allowedSlotIds) { eventAllowedSlotIds = allowedSlotIds; }
     void clearEventDropSlots() { eventAllowedSlotIds.clear(); }
@@ -33,7 +33,7 @@ protected:
     void dropEvent(QDropEvent *e) override;
     void dragLeaveEvent(QDragLeaveEvent *e) override;
 private:
-    View *view = nullptr;
+    GraphicsFrame *m_graphicsFrame = nullptr;
     QRubberBand *rubberBand = nullptr;
     bool selecting = false;
     QPoint origin; // view坐标起点

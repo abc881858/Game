@@ -4,25 +4,25 @@ CONFIG += c++17
 
 SOURCES += \
     eventdialog.cpp \
+    graphicsframe.cpp \
     graphicsview.cpp \
     main.cpp \
     mainwindow.cpp \
     pieceentrywidget.cpp \
     pieceitem.cpp \
     piecelistwidget.cpp \
-    util.cpp \
-    view.cpp
+    util.cpp
 
 HEADERS += \
     cityslotitem.h \
     eventdialog.h \
+    graphicsframe.h \
     graphicsview.h \
     mainwindow.h \
     pieceentrywidget.h \
     pieceitem.h \
     piecelistwidget.h \
-    util.h \
-    view.h
+    util.h
 
 FORMS += \
     mainwindow.ui

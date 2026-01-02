@@ -15,7 +15,8 @@ QT_END_NAMESPACE
 class CitySlotItem;
 class PieceItem;
 class QTextEdit;
-class View;
+class GraphicsFrame;
+class GraphicsView;
 
 class MainWindow : public QMainWindow
 {
@@ -66,7 +67,8 @@ private:
     QLabel* m_rpLabelS = nullptr;
 
     void setupStatusDock();          // 创建 dock
-    View *m_view;
+    GraphicsFrame *m_graphicsFrame;
+    GraphicsView *m_graphicsView;
 
 public:
     void addTurn(int delta);

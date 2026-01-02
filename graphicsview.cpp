@@ -3,7 +3,7 @@
 #include <QMouseEvent>
 #include <QRubberBand>
 #include <QDebug>
-#include "view.h"
+#include "graphicsframe.h"
 #include <QDragEnterEvent>
 #include <QDropEvent>
 #include <QMimeData>
@@ -17,7 +17,7 @@ inline bool isActionTokenPath(const QString& pixPath)
     return pixPath.contains("_XDQ", Qt::CaseSensitive);
 }
 
-GraphicsView::GraphicsView(View *v) : QGraphicsView(), view(v)
+GraphicsView::GraphicsView(GraphicsFrame *graphicsFrame) : QGraphicsView(), m_graphicsFrame(graphicsFrame)
 {
     setAcceptDrops(true);
     viewport()->setAcceptDrops(true);
@@ -28,9 +28,9 @@ void GraphicsView::wheelEvent(QWheelEvent *e)
 {
     if (e->modifiers() & Qt::ControlModifier) {
         if (e->angleDelta().y() > 0)
-            view->zoomIn(6);
+            m_graphicsFrame->zoomIn(6);
         else
-            view->zoomOut(6);
+            m_graphicsFrame->zoomOut(6);
         e->accept();
     } else {
         QGraphicsView::wheelEvent(e);

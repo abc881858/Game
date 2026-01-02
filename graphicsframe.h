@@ -5,14 +5,14 @@
 #include <QToolButton>
 #include "graphicsview.h"
 
-class View : public QFrame
+class GraphicsFrame : public QFrame
 {
     Q_OBJECT
 public:
-    explicit View(QWidget *parent = nullptr);
-    GraphicsView *view() const;
+    explicit GraphicsFrame(QWidget *parent = nullptr);
+    GraphicsView *graphicsView() const;
 private:
-    GraphicsView *graphicsView;
+    GraphicsView *m_graphicsView;
     QSlider *zoomSlider;
     QToolButton *resetButton;
 public slots:

@@ -1,20 +1,20 @@
-#include "view.h"
+#include "graphicsframe.h"
 #include <QToolButton>
 #include <QtWidgets>
 #include <QtMath>
 
-View::View(QWidget *parent)
+GraphicsFrame::GraphicsFrame(QWidget *parent)
     : QFrame{parent}
 {
     setFrameStyle(Sunken | StyledPanel);
-    graphicsView = new GraphicsView(this);
-    connect(graphicsView, &GraphicsView::pieceMovedCityToCity, this, &View::pieceMovedCityToCity);
+    m_graphicsView = new GraphicsView(this);
+    connect(m_graphicsView, &GraphicsView::pieceMovedCityToCity, this, &GraphicsFrame::pieceMovedCityToCity);
 
-    // graphicsView->setRenderHint(QPainter::Antialiasing, false);
-    // graphicsView->setViewport(new QGLWidget(QGLFormat(QGL::SampleBuffers)) : new QWidget);
-    graphicsView->setOptimizationFlags(QGraphicsView::DontSavePainterState);
-    graphicsView->setViewportUpdateMode(QGraphicsView::SmartViewportUpdate);
-    graphicsView->setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
+    // m_graphicsView->setRenderHint(QPainter::Antialiasing, false);
+    // m_graphicsView->setViewport(new QGLWidget(QGLFormat(QGL::SampleBuffers)) : new QWidget);
+    m_graphicsView->setOptimizationFlags(QGraphicsView::DontSavePainterState);
+    m_graphicsView->setViewportUpdateMode(QGraphicsView::SmartViewportUpdate);
+    m_graphicsView->setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
 
     int size = style()->pixelMetric(QStyle::PM_ToolBarIconSize);
     QSize iconSize(size, size);
@@ -49,64 +49,64 @@ View::View(QWidget *parent)
     zoomSliderLayout->addWidget(zoomOutIcon);
 
     QHBoxLayout *layout = new QHBoxLayout;
-    layout->addWidget(graphicsView);
+    layout->addWidget(m_graphicsView);
     layout->addLayout(zoomSliderLayout);
 
     setLayout(layout);
 
-    connect(resetButton, &QAbstractButton::clicked, this, &View::resetView);
-    connect(zoomSlider, &QAbstractSlider::valueChanged, this, &View::setupMatrix);
-    connect(graphicsView->verticalScrollBar(), &QAbstractSlider::valueChanged, this, &View::setResetButtonEnabled);
-    connect(graphicsView->horizontalScrollBar(), &QAbstractSlider::valueChanged, this, &View::setResetButtonEnabled);
+    connect(resetButton, &QAbstractButton::clicked, this, &GraphicsFrame::resetView);
+    connect(zoomSlider, &QAbstractSlider::valueChanged, this, &GraphicsFrame::setupMatrix);
+    connect(m_graphicsView->verticalScrollBar(), &QAbstractSlider::valueChanged, this, &GraphicsFrame::setResetButtonEnabled);
+    connect(m_graphicsView->horizontalScrollBar(), &QAbstractSlider::valueChanged, this, &GraphicsFrame::setResetButtonEnabled);
     connect(zoomInIcon, &QAbstractButton::clicked, this, [=](){ zoomIn(1); });
     connect(zoomOutIcon, &QAbstractButton::clicked, this, [=](){ zoomOut(1); });
 
     setupMatrix();
 }
 
-GraphicsView *View::view() const
+GraphicsView *GraphicsFrame::graphicsView() const
 {
-    return graphicsView;
+    return m_graphicsView;
 }
 
-void View::setupMatrix()
+void GraphicsFrame::setupMatrix()
 {
     qreal scale = qPow(qreal(2), (zoomSlider->value() - 250) / qreal(50));
 
     QTransform matrix;
     matrix.scale(scale, scale);
 
-    graphicsView->setTransform(matrix);
+    m_graphicsView->setTransform(matrix);
 
     setResetButtonEnabled();
 }
 
-void View::zoomIn(int level)
+void GraphicsFrame::zoomIn(int level)
 {
     zoomSlider->setValue(zoomSlider->value() + level);
     // qDebug() << __func__ << level << zoomSlider->value() + level;
 }
 
-void View::zoomOut(int level)
+void GraphicsFrame::zoomOut(int level)
 {
     zoomSlider->setValue(zoomSlider->value() - level);
     // qDebug() << __func__ << level << zoomSlider->value() - level;
 }
 
-void View::resetView()
+void GraphicsFrame::resetView()
 {
     zoomSlider->setValue(250);
     setupMatrix();
-    graphicsView->centerOn(0, 0);
+    m_graphicsView->centerOn(0, 0);
 
     resetButton->setEnabled(false);
 }
 
-void View::setResetButtonEnabled()
+void GraphicsFrame::setResetButtonEnabled()
 {
-    bool changed = (graphicsView->transform() != QTransform()) ||
-                   graphicsView->horizontalScrollBar()->value() != graphicsView->horizontalScrollBar()->minimum() ||
-                   graphicsView->verticalScrollBar()->value() != graphicsView->verticalScrollBar()->minimum();
+    bool changed = (m_graphicsView->transform() != QTransform()) ||
+                   m_graphicsView->horizontalScrollBar()->value() != m_graphicsView->horizontalScrollBar()->minimum() ||
+                   m_graphicsView->verticalScrollBar()->value() != m_graphicsView->verticalScrollBar()->minimum();
 
     resetButton->setEnabled(changed);
 }
