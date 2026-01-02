@@ -15,14 +15,14 @@ class PieceItem : public QObject, public QGraphicsPixmapItem
 public:
     explicit PieceItem(const QPixmap& pm);
 
-    void setUnitMeta(UnitKind kind, Side side, int level, const QString& pixPath) {
+    void setUnitMeta(PieceKind kind, Side side, int level, const QString& pixPath) {
         m_kind = kind;
         m_side = side;
         m_level = level;
         m_pixPath = pixPath;
     }
 
-    UnitKind kind() const { return m_kind; }
+    PieceKind kind() const { return m_kind; }
     Side side() const { return m_side; }
     int level() const { return m_level; }
     QString pixPath() const { return m_pixPath; }
@@ -53,7 +53,7 @@ private:
     int m_lastValidRegionId = -1;
     QPointF m_lastValidPos;
 
-    UnitKind m_kind = UnitKind::Other;
+    PieceKind m_kind = PieceKind::Other;
     int m_level = 0;
     QString m_pixPath;
 

@@ -102,6 +102,21 @@ void MainWindow::initActions()
     actionGroup->addAction(ui->action4);
     actionGroup->addAction(ui->action5);
     actionGroup->addAction(ui->action6);
+
+    auto* tbSeg = addToolBar("行动环节");
+    tbSeg->setMovable(false);
+    tbSeg->setIconSize(QSize(36,36));
+    tbSeg->setFont(QFont(QString("MicrosoftYaHei UI"), 14));
+
+    m_navProgress = new NavProgress(this);
+    tbSeg->addWidget(m_navProgress);
+    m_navProgress->setTopInfo(QStringList() << "陆上移动" << "陆战" << "调动" << "准备" << "补给");
+    m_navProgress->setCurrentStep(0);
+    m_navProgress->setCurrentBackground(QColor(24,189,155));
+
+    actEndSeg = tbSeg->addAction("结束环节");
+    actEndSeg->setIcon(QIcon(":/res/end.png"));
+    actEndSeg->setEnabled(false);
 }
 
 void MainWindow::initDockSystem()
@@ -151,6 +166,37 @@ void MainWindow::initControllers()
 
     connect(m_gameController, &GameController::actionPointsDelta, this, &MainWindow::addActionPoints);
     connect(m_gameController, &GameController::logLine, this, &MainWindow::appendLog);
+
+
+    connect(actEndSeg, &QAction::triggered, this, [this]{
+        if (!m_actionPhase.active) return;
+
+        if (m_actionPhase.segIndex < 4) {
+            m_actionPhase.segIndex++;
+            m_actionPhase.seg = ActionSeg(m_actionPhase.segIndex);
+            m_navProgress->setCurrentStep(m_actionPhase.segIndex + 1);
+            switch (m_actionPhase.segIndex) {
+            case 1:
+                appendLog("路上移动结束，进入陆战环节。\n", Qt::black, true);
+                break;
+            case 2:
+                appendLog("陆战结束，进入调动环节。\n", Qt::black, true);
+                break;
+            case 3:
+                appendLog("调动结束，进入准备环节。\n", Qt::black, true);
+                break;
+            case 4:
+                appendLog("准备结束，进入补给环节。\n", Qt::black, true);
+                break;
+            }
+
+            refreshActionSegUI();
+        } else {
+            m_navProgress->setCurrentStep(0);
+            appendLog("补给结束：本行动阶段结束。\n", Qt::black, true);
+            endCurrentActionPhase();
+        }
+    });
 }
 
 void MainWindow::initLogDock()
@@ -500,6 +546,20 @@ void MainWindow::addActionPoints(Side side, int delta)
               .arg(m_apS), Qt::black, true);
 
     refreshStatusUI();
+
+    if (!m_actionPhase.active) {
+        m_actionPhase.active = true;
+        m_actionPhase.activeSide = side;
+        m_actionPhase.segIndex = 0;
+        m_actionPhase.seg = ActionSeg::Move;
+        m_navProgress->setCurrentStep(m_actionPhase.segIndex + 1);
+
+        appendLog(QString("%1打出行动签：进入行动阶段（从【陆上移动】开始）\n")
+                  .arg(side==Side::D ? "德国" : "苏联"),
+                  Qt::black, true);
+
+        refreshActionSegUI();
+    }
 }
 
 void MainWindow::appendLog(const QString& line, const QColor& color, bool newLine)
@@ -513,4 +573,31 @@ void MainWindow::appendLog(const QString& line, const QColor& color, bool newLin
     cursor.movePosition(QTextCursor::End);
     cursor.insertText(newLine ? (line + "\n") : line, fmt);
     logTextEdit->setTextCursor(cursor);
+}
+
+void MainWindow::refreshActionSegUI()
+{
+    if (!m_actionPhase.active) {
+        actEndSeg->setEnabled(false);
+        return;
+    }
+
+    actEndSeg->setEnabled(true);
+}
+
+void MainWindow::endCurrentActionPhase()
+{
+    // 行动步骤结束：剩余行动点清零（规则9.5）
+    if (m_actionPhase.activeSide == Side::D) m_apD = 0;
+    if (m_actionPhase.activeSide == Side::S) m_apS = 0;
+
+    m_actionPhase.active = false;
+    m_actionPhase.activeSide = Side::Unknown;
+    m_actionPhase.segIndex = 0;
+    m_actionPhase.seg = ActionSeg::Move;
+
+    refreshStatusUI();
+    refreshActionSegUI();
+
+    appendLog("行动点清零，等待下一方打出行动签。\n", Qt::black, true);
 }

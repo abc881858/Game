@@ -8,5 +8,6 @@
         <file>res/D_TZ.png</file>
         <file>res/S_TZ.png</file>
         <file>res/status.png</file>
+        <file>res/end.png</file>
     </qresource>
 </RCC>

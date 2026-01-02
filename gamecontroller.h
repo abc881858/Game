@@ -9,7 +9,6 @@ class PlacementManager;
 class PieceItem;
 
 enum class Side;
-enum class UnitKind;
 
 class GameController : public QObject
 {

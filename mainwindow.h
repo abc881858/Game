@@ -8,6 +8,7 @@
 #include "util.h"
 #include "placementmanager.h"
 #include "gamecontroller.h"
+#include "navprogress.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -54,7 +55,6 @@ private:
     void initEventActions();
     void refreshStatusUI();
 
-    // 小工具：创建 D/S 列表
     PieceListWidget* createPieceList(QWidget* host);
 
 private:
@@ -105,4 +105,21 @@ private:
     QLabel* m_oilLabelS = nullptr;
     QLabel* m_apLabelS = nullptr;
     QLabel* m_rpLabelS = nullptr;
+
+    // 定义行动环节枚举 + 状态字段
+    enum class ActionSeg { Move=0, Battle=1, Redeploy=2, Prepare=3, Supply=4 };
+
+    struct ActionPhaseState {
+        bool active = false;        // 是否处于“行动阶段”
+        Side activeSide = Side::Unknown; // 当前行动方
+        ActionSeg seg = ActionSeg::Move; // 当前环节（必须按顺序）
+        int segIndex = 0;           // 0..4
+    };
+
+    ActionPhaseState m_actionPhase;
+    NavProgress *m_navProgress;
+    QAction* actEndSeg = nullptr;      // “结束当前环节”
+
+    void refreshActionSegUI();
+    void endCurrentActionPhase();
 };

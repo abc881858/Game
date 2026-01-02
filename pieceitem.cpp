@@ -61,7 +61,7 @@ void PieceItem::snapToNearestRegion() {
 
 void PieceItem::contextMenuEvent(QGraphicsSceneContextMenuEvent* e)
 {
-    if (m_kind != UnitKind::Corps) {
+    if (m_kind != PieceKind::Corps) {
         QGraphicsPixmapItem::contextMenuEvent(e);
         return;
     }

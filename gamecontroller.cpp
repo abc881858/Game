@@ -28,11 +28,12 @@ PieceItem* GameController::createPieceFromPixPath(const QString& pixPath)
     auto* item = new PieceItem(pm);
 
     // meta
-    Side side; int lvl;
+    Side side;
+    int lvl;
     if (parseCorpsFromPixPath(pixPath, side, lvl)) {
-        item->setUnitMeta(UnitKind::Corps, side, lvl, pixPath);
+        item->setUnitMeta(PieceKind::Corps, side, lvl, pixPath);
     } else {
-        item->setUnitMeta(UnitKind::Other, Side::Unknown, 0, pixPath);
+        item->setUnitMeta(PieceKind::Other, Side::Unknown, 0, pixPath);
     }
 
     // 让 PieceItem 拥有 placementManager/回滚
