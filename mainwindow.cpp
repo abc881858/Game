@@ -46,7 +46,8 @@ MainWindow::MainWindow(QWidget *parent)
     // ===== Central view + scene (setupReadyList needs scene) =====
     m_graphicsFrame = new GraphicsFrame;
     m_graphicsView = m_graphicsFrame->graphicsView();
-    connect(m_graphicsFrame, &GraphicsFrame::pieceMovedCityToCity, this, [=](int /*from*/, int /*to*/, Side side){
+
+    connect(m_graphicsView, &GraphicsView::pieceMovedCityToCity, this, [=](int /*from*/, int /*to*/, Side side){
         addActionPoints(side, -2);
     });
 

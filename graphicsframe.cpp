@@ -8,7 +8,6 @@ GraphicsFrame::GraphicsFrame(QWidget *parent)
 {
     setFrameStyle(Sunken | StyledPanel);
     m_graphicsView = new GraphicsView(this);
-    connect(m_graphicsView, &GraphicsView::pieceMovedCityToCity, this, &GraphicsFrame::pieceMovedCityToCity);
 
     // m_graphicsView->setRenderHint(QPainter::Antialiasing, false);
     // m_graphicsView->setViewport(new QGLWidget(QGLFormat(QGL::SampleBuffers)) : new QWidget);

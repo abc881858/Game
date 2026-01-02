@@ -21,6 +21,4 @@ public slots:
     void zoomOut(int level = 1);
     void setResetButtonEnabled();
     void resetView();
-signals:
-    void pieceMovedCityToCity(int fromSlotId, int toSlotId, Side side);
 };
