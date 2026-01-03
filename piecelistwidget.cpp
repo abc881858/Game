@@ -20,8 +20,17 @@ void PieceListWidget::startDrag(Qt::DropActions)
     const QString pixPath = it->data(Qt::UserRole).toString();
     if (pixPath.isEmpty()) return;
 
-    if (m_controller && !m_controller->canDragUnitInMoveSeg(m_side))
-        return;
+    const bool isToken = pixPath.contains("_XDQ", Qt::CaseSensitive);
+
+    if (m_controller) {
+        if (isToken) {
+            if (!m_controller->canDragActionToken(m_side))
+                return;
+        } else {
+            if (!m_controller->canDragUnitInMoveSeg(m_side))
+                return;
+        }
+    }
 
     auto* mime = new QMimeData;
     mime->setData(DragDrop::MimePiece, pixPath.toUtf8());

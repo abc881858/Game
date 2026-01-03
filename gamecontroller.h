@@ -89,8 +89,10 @@ public:
     void resetAllPiecesMoveFlag();
     void refreshMovablePieces();
     bool canDragFromReserve(Side side) const;
-
     bool canDragUnitInMoveSeg(Side side) const;
+
+    void setFirstPlayer(Side side);                 // 点击“德国/苏联先手”
+    bool canDragActionToken(Side side) const;       // 先手阶段允许拖拽行动签
 
 public slots:
     // 由 GraphicsView 在 dropEvent 中转发过来
@@ -145,4 +147,6 @@ private:
 
     GameState m_state;
     ActionPhaseState m_phase; // 你已迁入的阶段机
+
+    Side m_nextActionTokenSide = Side::Unknown;
 };

@@ -61,18 +61,34 @@ void GameController::onActionTokenDropped(const QString& pixPath)
 {
     if (!isActionTokenPath(pixPath)) return;
 
+    // 行动阶段中不处理行动签
+    if (m_phase.active) return;
+
     Side side = Side::Unknown;
     if (pixPath.startsWith(":/D/")) side = Side::D;
     else if (pixPath.startsWith(":/S/")) side = Side::S;
+
+    if (side == Side::Unknown) return;
+
+    // ✅ 只允许轮到的那方打签
+    if (side != m_nextActionTokenSide) {
+        emit logLine("当前不轮到该方打出行动签。\n", Qt::black, true);
+        return;
+    }
 
     int ap = 0;
     if (pixPath.contains("XDQ2")) ap = 2;
     else if (pixPath.contains("XDQ6")) ap = 6;
     if (ap == 0) return;
 
+    // 打出行动签 -> 获得AP -> addAP 内会 startActionPhase(side)
     addAP(side, ap);
 
-    emit logLine(QString("行动签：%1 AP +%2\n").arg(side==Side::D ? "德国" : "苏联").arg(ap), Qt::black, true);
+    emit logLine(QString("行动签：%1 AP +%2\n").arg(side==Side::D ? "德国" : "苏联").arg(ap),
+                 Qt::black, true);
+
+    // ✅ 打完这张签后，下一张签轮到对方（等本行动阶段结束后再打）
+    m_nextActionTokenSide = (side==Side::D ? Side::S : Side::D);
 }
 
 void GameController::onSplitRequested(PieceItem* piece, int a, int b)
@@ -295,8 +311,9 @@ void GameController::onPieceMovedRegionToRegion(PieceItem *piece, int fromRegion
         return;
     }
 
-    addAP(side, -cost);
     emit logLine(QString("陆上移动：%1 -> %2 距离=%3 扣AP=%4\n").arg(fromRegionId).arg(toRegionId).arg(dist).arg(cost), Qt::black, true);
+
+    addAP(side, -cost);
 
     // 占领判定：如果进入敌占格，则占领并锁住本阶段继续移动
     Side owner = m_owner.value(toRegionId, Side::Unknown);
@@ -384,14 +401,14 @@ void GameController::endActionPhase()
 
     const Side finishedSide = m_phase.activeSide;
 
-    // 规则9.5：AP清零
     clearAP(finishedSide);
 
     Side nextSide = Side::Unknown;
     if (finishedSide == Side::D) nextSide = Side::S;
     else if (finishedSide == Side::S) nextSide = Side::D;
 
-    // 清阶段状态
+    m_nextActionTokenSide = nextSide;
+
     m_phase.active = false;
     m_phase.activeSide = Side::Unknown;
     m_phase.segIndex = 0;
@@ -485,4 +502,38 @@ void GameController::clearAP(Side side)
     emit stateChanged();
 
     refreshMovablePieces();
+}
+
+void GameController::setFirstPlayer(Side side)
+{
+    if (side!=Side::D && side!=Side::S) return;
+
+    // 若当前还在行动阶段，可选择强制结束（按你需要）
+    if (m_phase.active) {
+        endActionPhase();
+    }
+
+    // 先手只是决定谁打第一张行动签，不给AP
+    clearAP(Side::D);
+    clearAP(Side::S);
+
+    m_nextActionTokenSide = side;
+
+    // UI：不在行动阶段
+    emit requestNavStep(0);
+    emit requestEndSegEnabled(false);
+
+    emit logLine(QString("先手确定：%1先打出行动签。\n").arg(side==Side::D?"德国":"苏联"),
+                 Qt::black, true);
+}
+
+bool GameController::canDragActionToken(Side side) const
+{
+    if (side!=Side::D && side!=Side::S) return false;
+
+    // 行动阶段中不允许再打行动签
+    if (m_phase.active) return false;
+
+    // 只有轮到的那方可以拖行动签
+    return side == m_nextActionTokenSide;
 }

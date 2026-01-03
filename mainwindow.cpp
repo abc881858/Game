@@ -499,11 +499,11 @@ void MainWindow::appendLog(const QString& line, const QColor& color, bool newLin
 void MainWindow::on_action_D_triggered()
 {
     if (!m_gameController) return;
-    m_gameController->addAP(Side::D, 6);
+    m_gameController->setFirstPlayer(Side::D);
 }
 
 void MainWindow::on_action_S_triggered()
 {
     if (!m_gameController) return;
-    m_gameController->addAP(Side::S, 6);
+    m_gameController->setFirstPlayer(Side::S);
 }
