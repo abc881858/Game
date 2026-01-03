@@ -9,12 +9,6 @@ PieceListWidget::PieceListWidget(QWidget* parent) : QListWidget(parent)
 {
 }
 
-int PieceListWidget::itemCount(const QListWidgetItem* it) const
-{
-    if (!it) return 0;
-    return it->data(RoleCount).toInt();
-}
-
 void PieceListWidget::startDrag(Qt::DropActions)
 {
     auto* it = currentItem();
