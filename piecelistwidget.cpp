@@ -42,6 +42,7 @@ void PieceListWidget::startDrag(Qt::DropActions)
     auto* drag = new QDrag(this);
     drag->setMimeData(mime);
     drag->setPixmap(QPixmap(pixPath).scaled(72,72, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+    drag->setHotSpot(QPoint(drag->pixmap().width()/2, drag->pixmap().height()/2));
 
     Qt::DropAction r = drag->exec(Qt::MoveAction, Qt::MoveAction);
     if (r == Qt::MoveAction) {

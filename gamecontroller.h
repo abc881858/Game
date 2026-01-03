@@ -116,7 +116,7 @@ signals:
     // 你已有：日志/行动点变更（可以逐步废弃 actionPointsDelta）
     void logLine(const QString& line, const QColor &color, bool newLine);
 
-    void stateChanged(const GameState& st);
+    void stateChanged();
 private:
     PieceItem* createPieceFromPixPath(const QString& pixPath);
     void rollbackToRegion(PieceItem* piece, int regionId, const QString& reason = QString());
@@ -138,7 +138,7 @@ private:
     // 维护“占领方”（没有更完整规则时先这么做）
     QHash<int, Side> m_owner;
 
-    void notifyState() { emit stateChanged(m_state); }
+    void notifyState() { emit stateChanged(); }
     void syncPhaseFlagsToMoveRules();
     bool phaseActive() const { return m_phase.active; }
     Side phaseSide()  const { return m_phase.activeSide; }

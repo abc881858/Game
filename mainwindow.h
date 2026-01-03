@@ -29,6 +29,7 @@ public:
 
 public slots:
     void appendLog(const QString &line, const QColor &color, bool newLine);
+    void refreshStatusUI();
 
 private slots:
     void on_action_DTZ_triggered();
@@ -48,7 +49,6 @@ private:
     void initPieceLists();
     void initGameBoardPieces();
     void initEventActions();
-    void refreshStatusUI();
 
     PieceListWidget* createPieceList(QWidget* host);
 

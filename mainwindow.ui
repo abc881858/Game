@@ -238,81 +238,8 @@
    </attribute>
   </widget>
   <action name="action1">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
    <property name="text">
     <string>事件：苏联预备队</string>
-   </property>
-   <property name="menuRole">
-    <enum>QAction::MenuRole::NoRole</enum>
-   </property>
-  </action>
-  <action name="action2">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>行动步骤</string>
-   </property>
-   <property name="toolTip">
-    <string>行动步骤</string>
-   </property>
-   <property name="menuRole">
-    <enum>QAction::MenuRole::NoRole</enum>
-   </property>
-  </action>
-  <action name="action3">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>轰炸步骤</string>
-   </property>
-   <property name="toolTip">
-    <string>轰炸步骤</string>
-   </property>
-   <property name="menuRole">
-    <enum>QAction::MenuRole::NoRole</enum>
-   </property>
-  </action>
-  <action name="action4">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>增援步骤</string>
-   </property>
-   <property name="toolTip">
-    <string>增援步骤</string>
-   </property>
-   <property name="menuRole">
-    <enum>QAction::MenuRole::NoRole</enum>
-   </property>
-  </action>
-  <action name="action5">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>生产步骤</string>
-   </property>
-   <property name="toolTip">
-    <string>生产步骤</string>
-   </property>
-   <property name="menuRole">
-    <enum>QAction::MenuRole::NoRole</enum>
-   </property>
-  </action>
-  <action name="action6">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>国力步骤</string>
-   </property>
-   <property name="toolTip">
-    <string>国力步骤</string>
    </property>
    <property name="menuRole">
     <enum>QAction::MenuRole::NoRole</enum>

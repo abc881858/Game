@@ -97,14 +97,6 @@ MainWindow::~MainWindow()
 
 void MainWindow::initActions()
 {
-    auto *actionGroup = new QActionGroup(this);
-    actionGroup->addAction(ui->action1);
-    actionGroup->addAction(ui->action2);
-    actionGroup->addAction(ui->action3);
-    actionGroup->addAction(ui->action4);
-    actionGroup->addAction(ui->action5);
-    actionGroup->addAction(ui->action6);
-
     auto* tbSeg = addToolBar("行动环节");
     tbSeg->setMovable(false);
     tbSeg->setIconSize(QSize(36,36));
@@ -163,12 +155,13 @@ void MainWindow::initControllers()
 
     m_gameController = new GameController(scene, m_placementManager, this);
 
+    connect(actEndSeg, &QAction::triggered, m_gameController, &GameController::advanceSegment);
+
     connect(m_graphicsView, &GraphicsView::pieceDropped, m_gameController, &GameController::onPieceDropped);
+
     connect(m_graphicsView, &GraphicsView::actionTokenDropped, m_gameController, &GameController::onActionTokenDropped);
 
     connect(m_gameController, &GameController::logLine, this, &MainWindow::appendLog);
-
-    connect(actEndSeg, &QAction::triggered, m_gameController, &GameController::advanceSegment);
 
     connect(m_gameController, &GameController::requestEndSegEnabled, this, [this](bool en){
         if (actEndSeg) actEndSeg->setEnabled(en);
@@ -178,9 +171,7 @@ void MainWindow::initControllers()
         if (m_navProgress) m_navProgress->setCurrentStep(step);
     });
 
-    connect(m_gameController, &GameController::stateChanged, this, [this](const GameState&){
-        refreshStatusUI();
-    });
+    connect(m_gameController, &GameController::stateChanged, this, &MainWindow::refreshStatusUI);
 }
 
 void MainWindow::initLogDock()

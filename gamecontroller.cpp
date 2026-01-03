@@ -295,7 +295,6 @@ void GameController::onPieceMovedRegionToRegion(PieceItem *piece, int fromRegion
         return;
     }
 
-    // 扣行动点（统一入口 addAP，会触发 stateChanged/刷新可拖拽）
     addAP(side, -cost);
     emit logLine(QString("陆上移动：%1 -> %2 距离=%3 扣AP=%4\n").arg(fromRegionId).arg(toRegionId).arg(dist).arg(cost), Qt::black, true);
 
