@@ -166,43 +166,20 @@ void MainWindow::initControllers()
     connect(m_graphicsView, &GraphicsView::pieceDropped, m_gameController, &GameController::onPieceDropped);
     connect(m_graphicsView, &GraphicsView::actionTokenDropped, m_gameController, &GameController::onActionTokenDropped);
 
-    connect(m_gameController, &GameController::actionPointsDelta, this, &MainWindow::addActionPoints);
     connect(m_gameController, &GameController::logLine, this, &MainWindow::appendLog);
 
-    connect(actEndSeg, &QAction::triggered, this, [this]{
-        if (!m_actionPhase.active) return;
+    connect(actEndSeg, &QAction::triggered, m_gameController, &GameController::advanceSegment);
 
-        if (m_actionPhase.segIndex < 4) {
-            m_actionPhase.segIndex++;
-            m_actionPhase.seg = ActionSeg(m_actionPhase.segIndex);
+    connect(m_gameController, &GameController::requestEndSegEnabled, this, [this](bool en){
+        if (actEndSeg) actEndSeg->setEnabled(en);
+    });
 
-            m_gameController->setActionPhaseActive(m_actionPhase.active);
-            m_gameController->setActionActiveSide(m_actionPhase.activeSide);
-            m_gameController->setInMoveSegment(m_actionPhase.active && m_actionPhase.seg == ActionSeg::Move);
-            m_gameController->refreshMovablePieces();
+    connect(m_gameController, &GameController::requestNavStep, this, [this](int step){
+        if (m_navProgress) m_navProgress->setCurrentStep(step);
+    });
 
-            m_navProgress->setCurrentStep(m_actionPhase.segIndex + 1);
-            switch (m_actionPhase.segIndex) {
-            case 1:
-                appendLog("路上移动结束，进入陆战环节。\n", Qt::black, true);
-                break;
-            case 2:
-                appendLog("陆战结束，进入调动环节。\n", Qt::black, true);
-                break;
-            case 3:
-                appendLog("调动结束，进入准备环节。\n", Qt::black, true);
-                break;
-            case 4:
-                appendLog("准备结束，进入补给环节。\n", Qt::black, true);
-                break;
-            }
-
-            refreshActionSegUI();
-        } else {
-            m_navProgress->setCurrentStep(0);
-            appendLog("补给结束：本行动阶段结束。\n", Qt::black, true);
-            endCurrentActionPhase();
-        }
+    connect(m_gameController, &GameController::stateChanged, this, [this](const GameState&){
+        refreshStatusUI();
     });
 }
 
@@ -238,9 +215,18 @@ void MainWindow::initStatusDock()
     grid->setHorizontalSpacing(12);
     grid->setVerticalSpacing(6);
 
+    m_turnLabel = new QLabel("-");
+    m_npLabelD  = new QLabel("-");
+    m_oilLabelD = new QLabel("-");
+    m_apLabelD  = new QLabel("-");
+    m_rpLabelD  = new QLabel("-");
+    m_npLabelS  = new QLabel("-");
+    m_oilLabelS = new QLabel("-");
+    m_apLabelS  = new QLabel("-");
+    m_rpLabelS  = new QLabel("-");
+
     // 左侧：回合
     auto *lbTurn = new QLabel("回合");
-    m_turnLabel = new QLabel(QString::number(m_turn));
     lbTurn->setAlignment(Qt::AlignCenter);
     m_turnLabel->setAlignment(Qt::AlignCenter);
 
@@ -256,10 +242,6 @@ void MainWindow::initStatusDock()
 
     // 德国行
     grid->addWidget(new QLabel("德国"), 1, 1);
-    m_npLabelD  = new QLabel(QString::number(m_npD));
-    m_oilLabelD = new QLabel(QString::number(m_oilD));
-    m_apLabelD  = new QLabel(QString::number(m_apD));
-    m_rpLabelD  = new QLabel(QString::number(m_rpD));
     grid->addWidget(m_npLabelD, 1, 2);
     grid->addWidget(m_oilLabelD, 1, 3);
     grid->addWidget(m_apLabelD, 1, 4);
@@ -267,10 +249,6 @@ void MainWindow::initStatusDock()
 
     // 苏联行
     grid->addWidget(new QLabel("苏联"), 2, 1);
-    m_npLabelS  = new QLabel(QString::number(m_npS));
-    m_oilLabelS = new QLabel(QString::number(m_oilS));
-    m_apLabelS  = new QLabel(QString::number(m_apS));
-    m_rpLabelS  = new QLabel(QString::number(m_rpS));
     grid->addWidget(m_npLabelS, 2, 2);
     grid->addWidget(m_oilLabelS, 2, 3);
     grid->addWidget(m_apLabelS, 2, 4);
@@ -468,19 +446,20 @@ void MainWindow::initEventActions()
 
 void MainWindow::refreshStatusUI()
 {
-    if (m_turnLabel) m_turnLabel->setText(QString::number(m_turn));
+    if (!m_gameController) return;
+    const auto& st = m_gameController->state();
 
-    if (m_npLabelD)  m_npLabelD->setText(QString::number(m_npD));
-    if (m_npLabelS)  m_npLabelS->setText(QString::number(m_npS));
+    if (m_turnLabel) m_turnLabel->setText(QString::number(st.turn));
 
-    if (m_oilLabelD) m_oilLabelD->setText(QString::number(m_oilD));
-    if (m_oilLabelS) m_oilLabelS->setText(QString::number(m_oilS));
+    if (m_npLabelD)  m_npLabelD->setText(QString::number(st.npD));
+    if (m_oilLabelD) m_oilLabelD->setText(QString::number(st.oilD));
+    if (m_apLabelD)  m_apLabelD->setText(QString::number(st.apD));
+    if (m_rpLabelD)  m_rpLabelD->setText(QString::number(st.rpD));
 
-    if (m_apLabelD)  m_apLabelD->setText(QString::number(m_apD));
-    if (m_apLabelS)  m_apLabelS->setText(QString::number(m_apS));
-
-    if (m_rpLabelD)  m_rpLabelD->setText(QString::number(m_rpD));
-    if (m_rpLabelS)  m_rpLabelS->setText(QString::number(m_rpS));
+    if (m_npLabelS)  m_npLabelS->setText(QString::number(st.npS));
+    if (m_oilLabelS) m_oilLabelS->setText(QString::number(st.oilS));
+    if (m_apLabelS)  m_apLabelS->setText(QString::number(st.apS));
+    if (m_rpLabelS)  m_rpLabelS->setText(QString::number(st.rpS));
 }
 
 // =====================================================
@@ -518,76 +497,6 @@ void MainWindow::addPiece(PieceListWidget* list,
     list->setItemWidget(it, w);
 }
 
-void MainWindow::addTurn(int delta)
-{
-    m_turn += delta;
-    refreshStatusUI();
-}
-
-void MainWindow::addNationalPower(Side side, int delta)
-{
-    if (side == Side::D) m_npD += delta;
-    else if (side == Side::S) m_npS += delta;
-    refreshStatusUI();
-}
-
-void MainWindow::addOil(Side side, int delta)
-{
-    if (side == Side::D) m_oilD += delta;
-    else if (side == Side::S) m_oilS += delta;
-    refreshStatusUI();
-}
-
-void MainWindow::addReadyPoints(Side side, int delta)
-{
-    if (side == Side::D) m_rpD += delta;
-    else if (side == Side::S) m_rpS += delta;
-    refreshStatusUI();
-}
-
-void MainWindow::addActionPoints(Side side, int delta)
-{
-    if (side == Side::D) m_apD += delta;
-    else if (side == Side::S) m_apS += delta;
-
-    const QString who = (side == Side::D ? "德国" : "苏联");
-    appendLog(QString("%1行动点 %2%3，当前：D=%4 S=%5\n")
-              .arg(who)
-              .arg(delta >= 0 ? "+" : "")
-              .arg(delta)
-              .arg(m_apD)
-              .arg(m_apS), Qt::black, true);
-
-    refreshStatusUI();
-
-    // 新进入行动阶段时，重置所有兵团“本阶段是否被锁住继续移动”
-    if (m_actionPhase.active && m_actionPhase.seg == ActionSeg::Move && m_actionPhase.segIndex == 0) {
-        m_gameController->resetAllPiecesMoveFlag();
-    }
-
-    if (!m_actionPhase.active) {
-        m_actionPhase.active = true;
-        m_actionPhase.activeSide = side;
-        m_actionPhase.segIndex = 0;
-        m_actionPhase.seg = ActionSeg::Move;
-        m_navProgress->setCurrentStep(m_actionPhase.segIndex + 1);
-
-        appendLog(QString("%1打出行动签：进入行动阶段（从【陆上移动】开始）\n")
-                  .arg(side==Side::D ? "德国" : "苏联"),
-                  Qt::black, true);
-
-        refreshActionSegUI();
-    }
-
-    // ===== 同步给 GameController（必须）=====
-    m_gameController->setCurrentAP(Side::D, m_apD);
-    m_gameController->setCurrentAP(Side::S, m_apS);
-    m_gameController->setActionPhaseActive(m_actionPhase.active);
-    m_gameController->setActionActiveSide(m_actionPhase.activeSide);
-    m_gameController->setInMoveSegment(m_actionPhase.active && m_actionPhase.seg == ActionSeg::Move);
-    m_gameController->refreshMovablePieces();
-}
-
 void MainWindow::appendLog(const QString& line, const QColor& color, bool newLine)
 {
     if (!logTextEdit) return;
@@ -601,61 +510,14 @@ void MainWindow::appendLog(const QString& line, const QColor& color, bool newLin
     logTextEdit->setTextCursor(cursor);
 }
 
-void MainWindow::refreshActionSegUI()
-{
-    if (!m_actionPhase.active) {
-        actEndSeg->setEnabled(false);
-        return;
-    }
-
-    actEndSeg->setEnabled(true);
-}
-
-void MainWindow::endCurrentActionPhase()
-{
-    // ✅ 先记住本次行动方（因为下面要清空）
-    const Side finishedSide = m_actionPhase.activeSide;
-
-    // 行动步骤结束：剩余行动点清零（规则9.5）
-    if (finishedSide == Side::D) m_apD = 0;
-    if (finishedSide == Side::S) m_apS = 0;
-
-    // ✅ 轮流行动签：下一方 = 对方
-    Side nextSide = Side::Unknown;
-    if (finishedSide == Side::D) nextSide = Side::S;
-    else if (finishedSide == Side::S) nextSide = Side::D;
-
-    // ===== 下面是你原来的清状态 =====
-    m_actionPhase.active = false;
-    m_actionPhase.activeSide = Side::Unknown;
-    m_actionPhase.segIndex = 0;
-    m_actionPhase.seg = ActionSeg::Move;
-
-    // ===== 同步给 controller =====
-    m_gameController->setActionPhaseActive(false);
-    m_gameController->setInMoveSegment(false);
-    m_gameController->setActionActiveSide(Side::Unknown);
-
-    m_gameController->setCurrentAP(Side::D, m_apD);
-    m_gameController->setCurrentAP(Side::S, m_apS);
-
-    // ✅ 刷新：场上棋子不可拖；待命区只有 nextSide 的行动签可拖
-    m_gameController->refreshMovablePieces();
-
-    refreshStatusUI();
-    refreshActionSegUI();
-
-    appendLog(QString("行动阶段结束：下一张行动签由【%1】打出。\n")
-              .arg(nextSide==Side::D ? "德国" : "苏联"),
-              Qt::black, true);
-}
-
 void MainWindow::on_action_D_triggered()
 {
-    m_gameController->setActionActiveSide(Side::D);
+    if (!m_gameController) return;
+    m_gameController->addAP(Side::D, 6);
 }
 
 void MainWindow::on_action_S_triggered()
 {
-    m_gameController->setActionActiveSide(Side::S);
+    if (!m_gameController) return;
+    m_gameController->addAP(Side::S, 6);
 }

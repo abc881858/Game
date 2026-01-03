@@ -68,14 +68,11 @@ void GameController::onActionTokenDropped(const QString& pixPath)
     int ap = 0;
     if (pixPath.contains("XDQ2")) ap = 2;
     else if (pixPath.contains("XDQ6")) ap = 6;
-
     if (ap == 0) return;
 
-    // ✅ 打出行动签：进入行动阶段（你已有逻辑在 MainWindow::addActionPoints 里）
-    emit actionPointsDelta(side, ap);
+    addAP(side, ap);
 
-    emit logLine(QString("行动签：%1 AP +%2\n").arg(side==Side::D ? "德国" : "苏联").arg(ap),
-                 Qt::black, true);
+    emit logLine(QString("行动签：%1 AP +%2\n").arg(side==Side::D ? "德国" : "苏联").arg(ap), Qt::black, true);
 }
 
 void GameController::onSplitRequested(PieceItem* piece, int a, int b)
@@ -204,7 +201,8 @@ void GameController::refreshMovablePieces()
 {
     if (!m_scene) return;
 
-    const int ap = apOf(m_activeSide);
+    const Side side = phaseSide();
+    const int ap = currentAP(side);
 
     for (auto* gi : m_scene->items()) {
         if (gi->type() != PieceType) continue;
@@ -212,19 +210,18 @@ void GameController::refreshMovablePieces()
         auto* p = static_cast<PieceItem*>(gi);
 
         bool movable =
-            m_actionActive &&
-            m_inMoveSegment &&
-            (m_activeSide != Side::Unknown) &&
+            phaseActive() &&
+            inMoveSeg() &&
+            (side != Side::Unknown) &&
             (p->kind() == PieceKind::Corps) &&
-            (p->side() == m_activeSide) &&
+            (p->side() == side) &&
             (ap > 0);
 
-        // 如果你实现了“进入敌占格后本阶段不能再动”
         if (movable && p->movedThisActionPhase())
             movable = false;
 
         p->setFlag(QGraphicsItem::ItemIsMovable, movable);
-        p->setFlag(QGraphicsItem::ItemIsSelectable, true); // 选中可保留
+        p->setFlag(QGraphicsItem::ItemIsSelectable, true);
     }
 }
 
@@ -233,30 +230,25 @@ bool GameController::canDragFromReserve(Side side) const
     if (side == Side::Unknown) return false;
 
     // 没进入行动阶段：不允许
-    if (!m_actionActive) return false;
+    if (!phaseActive()) return false;
 
     // 不是陆上移动环节：不允许
-    if (!m_inMoveSegment) return false;
+    if (!inMoveSeg()) return false;
 
     // 不是当前行动方：不允许
-    if (side != m_activeSide) return false;
+    if (side != phaseSide()) return false;
 
     // AP=0：不允许
-    if (apOf(m_activeSide) <= 0) return false;
+    if (currentAP(phaseSide()) <= 0) return false;
 
     return true;
 }
 
 void GameController::onPieceMovedRegionToRegion(PieceItem *piece, int fromRegionId, int toRegionId, Side side)
 {
-    qDebug() << "MOVE SIG" << fromRegionId << toRegionId << int(side)
-             << "actionActive=" << m_actionActive
-             << "inMoveSeg=" << m_inMoveSegment
-             << "activeSide=" << int(m_activeSide);
-
     if (!piece) return;
-    if (!m_actionActive || !m_inMoveSegment) return;      // 只在“陆上移动环节”生效
-    if (side != m_activeSide) return;                     // 只能当前行动方移动
+    if (!phaseActive() || !inMoveSeg()) return;// 只在“陆上移动环节”生效
+    if (side != phaseSide()) return;// 只能当前行动方移动
     if (!m_placementManager) return;
 
     // 已因“进入敌占格”被锁住，则回滚
@@ -282,7 +274,7 @@ void GameController::onPieceMovedRegionToRegion(PieceItem *piece, int fromRegion
     }
 
     const int cost = moveCost(piece, dist);
-    const int apNow = apOf(side);
+    const int apNow = currentAP(side);
 
     if (apNow < cost) {
         emit logLine(QString("移动失败：距离=%1 需AP=%2 当前AP=%3，不足，已回滚。\n")
@@ -292,8 +284,8 @@ void GameController::onPieceMovedRegionToRegion(PieceItem *piece, int fromRegion
         return;
     }
 
-    // 扣行动点（用你已有的 actionPointsDelta）
-    emit actionPointsDelta(side, -cost);
+    // 扣行动点（统一入口 addAP，会触发 stateChanged/刷新可拖拽）
+    addAP(side, -cost);
     emit logLine(QString("陆上移动：%1 -> %2 距离=%3 扣AP=%4\n")
                  .arg(fromRegionId).arg(toRegionId).arg(dist).arg(cost), Qt::black, true);
 
@@ -314,9 +306,168 @@ void GameController::onPieceMovedRegionToRegion(PieceItem *piece, int fromRegion
 
 bool GameController::canDragUnitInMoveSeg(Side side) const
 {
-    if (!m_actionActive) return false;
-    if (!m_inMoveSegment) return false;
-    if (side != m_activeSide) return false;
-    if (apOf(m_activeSide) <= 0) return false;
+    if (!phaseActive()) return false;
+    if (!inMoveSeg()) return false;
+    if (side != phaseSide()) return false;
+    if (currentAP(phaseSide()) <= 0) return false;
     return true;
+}
+
+void GameController::startActionPhase(Side side)
+{
+    if (side == Side::Unknown) return;
+    if (m_phase.active) return;// 如果已经在行动阶段：一般不允许再次 start（按你规则也可以直接 return）
+
+    m_phase.active = true;
+    m_phase.activeSide = side;
+    m_phase.segIndex = 0;
+    m_phase.seg = ActionSeg::Move;
+
+    // 进入行动阶段：重置“本阶段锁定继续移动”标记
+    resetAllPiecesMoveFlag();
+
+    // 同步移动规则开关 + 刷新可拖拽
+    syncPhaseFlagsToMoveRules();
+
+    // 通知 UI
+    emit requestEndSegEnabled(true);
+    emit requestNavStep(1); // Move=1
+    emit actionPhaseChanged(true, m_phase.activeSide, m_phase.segIndex, m_phase.seg);
+
+    // 日志（走你已有信号）
+    emit logLine(QString("%1打出行动签：进入行动阶段（从【陆上移动】开始）\n").arg(side==Side::D ? "德国" : "苏联"), Qt::black, true);
+}
+
+void GameController::advanceSegment()
+{
+    if (!m_phase.active) return;
+
+    if (m_phase.segIndex < 4) {
+        m_phase.segIndex++;
+        m_phase.seg = ActionSeg(m_phase.segIndex);
+
+        // 切换环节：同步移动规则（只有 Move 环节允许移动）
+        syncPhaseFlagsToMoveRules();
+
+        // UI 更新：NavProgress 用 1..5
+        emit requestNavStep(m_phase.segIndex + 1);
+        emit actionPhaseChanged(true, m_phase.activeSide, m_phase.segIndex, m_phase.seg);
+
+        // 日志提示
+        switch (m_phase.segIndex) {
+        case 1: emit logLine("陆上移动结束，进入陆战环节。\n", Qt::black, true); break;
+        case 2: emit logLine("陆战结束，进入调动环节。\n", Qt::black, true); break;
+        case 3: emit logLine("调动结束，进入准备环节。\n", Qt::black, true); break;
+        case 4: emit logLine("准备结束，进入补给环节。\n", Qt::black, true); break;
+        default: break;
+        }
+        return;
+    }
+
+    // segIndex==4: 结束补给 -> 行动阶段结束
+    emit logLine("补给结束：本行动阶段结束。\n", Qt::black, true);
+    endActionPhase();
+}
+
+void GameController::endActionPhase()
+{
+    if (!m_phase.active) return;
+
+    const Side finishedSide = m_phase.activeSide;
+
+    // 规则9.5：AP清零
+    clearAP(finishedSide);
+
+    Side nextSide = Side::Unknown;
+    if (finishedSide == Side::D) nextSide = Side::S;
+    else if (finishedSide == Side::S) nextSide = Side::D;
+
+    // 清阶段状态
+    m_phase.active = false;
+    m_phase.activeSide = Side::Unknown;
+    m_phase.segIndex = 0;
+    m_phase.seg = ActionSeg::Move;
+
+    syncPhaseFlagsToMoveRules();
+
+    emit requestNavStep(0);
+    emit requestEndSegEnabled(false);
+    emit actionPhaseChanged(false, Side::Unknown, 0, ActionSeg::Move);
+
+    emit logLine(QString("行动阶段结束：下一张行动签由【%1】打出。\n")
+                 .arg(nextSide==Side::D ? "德国" : "苏联"),
+                 Qt::black, true);
+}
+
+void GameController::syncPhaseFlagsToMoveRules()
+{
+    refreshMovablePieces();
+}
+
+int GameController::currentAP(Side side) const
+{
+    return m_state.ap(side);
+}
+
+void GameController::addTurn(int delta)
+{
+    m_state.turn += delta;
+    // 可选：限制 1..8
+    if (m_state.turn < 1) m_state.turn = 1;
+    if (m_state.turn > 8) m_state.turn = 8;
+
+    notifyState();
+}
+
+void GameController::addNationalPower(Side side, int delta)
+{
+    if (side!=Side::D && side!=Side::S) return;
+    m_state.npRef(side) += delta;
+    notifyState();
+}
+
+void GameController::addOil(Side side, int delta)
+{
+    if (side!=Side::D && side!=Side::S) return;
+    m_state.oilRef(side) += delta;
+    notifyState();
+}
+
+void GameController::addReadyPoints(Side side, int delta)
+{
+    if (side!=Side::D && side!=Side::S) return;
+    m_state.rpRef(side) += delta;
+    notifyState();
+}
+
+void GameController::addAP(Side side, int delta)
+{
+    if (side!=Side::D && side!=Side::S) return;
+
+    m_state.apRef(side) += delta;
+    notifyState();
+
+    // 行动阶段：delta>0 且未active -> start
+    if (delta > 0 && !m_phase.active) {
+        startActionPhase(side);
+    } else {
+        refreshMovablePieces();
+    }
+
+    const QString who = (side == Side::D ? "德国" : "苏联");
+    emit logLine(QString("%1行动点 %2%3，当前：D=%4 S=%5\n")
+                 .arg(who)
+                 .arg(delta >= 0 ? "+" : "")
+                 .arg(delta)
+                 .arg(m_state.apD)
+                 .arg(m_state.apS),
+                 Qt::black, true);
+}
+
+void GameController::clearAP(Side side)
+{
+    if (side!=Side::D && side!=Side::S) return;
+    m_state.apRef(side) = 0;
+    notifyState();
+    refreshMovablePieces();
 }
