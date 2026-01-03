@@ -16,6 +16,7 @@
 #include "graphicsframe.h"
 #include "eventdialog.h"
 #include "pieceentrywidget.h"
+#include "battledialog.h"
 
 // ======= 小工具：城市格子矩形表 =======
 static QList<QRectF> buildRegionRects()
@@ -83,8 +84,6 @@ MainWindow::MainWindow(QWidget *parent)
     m_gameController->refreshMovablePieces();
     initEventActions();
     refreshStatusUI();
-
-    QTimer::singleShot(0, this, &MainWindow::initFirstPlayerByDice);
 }
 
 MainWindow::~MainWindow()
@@ -219,7 +218,7 @@ void MainWindow::initLogDock()
     QAction *logAction = logDock->toggleViewAction();
     logAction->setIcon(QIcon(":/res/log.png"));
     logAction->setText("日志");
-    ui->menuView->addAction(logAction);
+    ui->toolBar->addAction(logAction);
 
     logDock->toggleView(false);
 }
@@ -282,7 +281,7 @@ void MainWindow::initStatusDock()
     QAction *statusAction = statusDock->toggleViewAction();
     statusAction->setIcon(QIcon(":/res/status.png"));
     statusAction->setText("状态");
-    ui->menuView->addAction(statusAction);
+    ui->toolBar->addAction(statusAction);
 
     statusDock->toggleView(false);
 }
@@ -640,9 +639,6 @@ void MainWindow::endCurrentActionPhase()
     m_gameController->setCurrentAP(Side::D, m_apD);
     m_gameController->setCurrentAP(Side::S, m_apS);
 
-    // ✅ 关键：告诉 controller 下一张行动签允许谁打
-    m_gameController->setNextSideToPlayToken(nextSide);
-
     // ✅ 刷新：场上棋子不可拖；待命区只有 nextSide 的行动签可拖
     m_gameController->refreshMovablePieces();
 
@@ -654,25 +650,12 @@ void MainWindow::endCurrentActionPhase()
               Qt::black, true);
 }
 
-void MainWindow::initFirstPlayerByDice()
+void MainWindow::on_action_D_triggered()
 {
-    int d = QRandomGenerator::global()->bounded(1, 7);
-    int s = QRandomGenerator::global()->bounded(1, 7);
+    m_gameController->setActionActiveSide(Side::D);
+}
 
-    appendLog(QString("开局先手判定：德国掷骰=%1，苏联掷骰=%2\n").arg(d).arg(s),
-              Qt::black, true);
-
-    if (d == s) {
-        appendLog("平局：重新掷骰。\n", Qt::black, true);
-        QTimer::singleShot(0, this, &MainWindow::initFirstPlayerByDice);
-        return;
-    }
-
-    m_nextSideToPlayToken = (d > s) ? Side::D : Side::S;
-    appendLog(QString("先手：%1（请拖动该方行动签开始行动阶段）\n")
-              .arg(m_nextSideToPlayToken==Side::D ? "德国" : "苏联"),
-              Qt::black, true);
-
-    // ✅ 同步给 controller：谁可以打出行动签
-    m_gameController->setNextSideToPlayToken(m_nextSideToPlayToken);
+void MainWindow::on_action_S_triggered()
+{
+    m_gameController->setActionActiveSide(Side::S);
 }

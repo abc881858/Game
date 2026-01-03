@@ -65,11 +65,6 @@ void GameController::onActionTokenDropped(const QString& pixPath)
     if (pixPath.startsWith(":/D/")) side = Side::D;
     else if (pixPath.startsWith(":/S/")) side = Side::S;
 
-    if (!canPlayActionToken(side)) {
-       emit logLine("当前不能打出该方行动签。\n", Qt::black, true);
-       return;
-    }
-
     int ap = 0;
     if (pixPath.contains("XDQ2")) ap = 2;
     else if (pixPath.contains("XDQ6")) ap = 6;
@@ -78,9 +73,6 @@ void GameController::onActionTokenDropped(const QString& pixPath)
 
     // ✅ 打出行动签：进入行动阶段（你已有逻辑在 MainWindow::addActionPoints 里）
     emit actionPointsDelta(side, ap);
-
-    // ✅ 行动签打出后，把“下一次可打行动签的一方”切给对方（如果你规则是轮流）
-    m_nextSideToPlayToken = (side == Side::D) ? Side::S : Side::D;
 
     emit logLine(QString("行动签：%1 AP +%2\n").arg(side==Side::D ? "德国" : "苏联").arg(ap),
                  Qt::black, true);
@@ -318,14 +310,6 @@ void GameController::onPieceMovedRegionToRegion(PieceItem *piece, int fromRegion
 
     // 这次移动成功，更新 lastValid
     piece->markLastValid(toRegionId);
-}
-
-bool GameController::canPlayActionToken(Side side) const
-{
-    // 未进入行动阶段时，只有 nextSide 可以打行动签
-    if (m_actionActive) return false;
-    if (side == Side::Unknown) return false;
-    return side == m_nextSideToPlayToken;
 }
 
 bool GameController::canDragUnitInMoveSeg(Side side) const

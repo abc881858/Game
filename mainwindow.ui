@@ -53,7 +53,7 @@
          <x>0</x>
          <y>0</y>
          <width>300</width>
-         <height>823</height>
+         <height>857</height>
         </rect>
        </property>
        <attribute name="label">
@@ -66,7 +66,7 @@
          <x>0</x>
          <y>0</y>
          <width>300</width>
-         <height>823</height>
+         <height>857</height>
         </rect>
        </property>
        <attribute name="label">
@@ -79,7 +79,7 @@
          <x>0</x>
          <y>0</y>
          <width>300</width>
-         <height>823</height>
+         <height>857</height>
         </rect>
        </property>
        <attribute name="label">
@@ -120,7 +120,7 @@
          <x>0</x>
          <y>0</y>
          <width>300</width>
-         <height>823</height>
+         <height>857</height>
         </rect>
        </property>
        <attribute name="label">
@@ -133,7 +133,7 @@
          <x>0</x>
          <y>0</y>
          <width>300</width>
-         <height>823</height>
+         <height>857</height>
         </rect>
        </property>
        <attribute name="label">
@@ -146,7 +146,7 @@
          <x>0</x>
          <y>0</y>
          <width>300</width>
-         <height>823</height>
+         <height>857</height>
         </rect>
        </property>
        <attribute name="label">
@@ -171,46 +171,48 @@
      <pointsize>14</pointsize>
     </font>
    </property>
+   <widget class="QMenu" name="menu">
+    <property name="title">
+     <string>事件步骤</string>
+    </property>
+    <addaction name="action1"/>
+   </widget>
+   <widget class="QMenu" name="menu_2">
+    <property name="title">
+     <string>行动步骤</string>
+    </property>
+    <addaction name="action_D"/>
+    <addaction name="action_S"/>
+   </widget>
+   <widget class="QMenu" name="menu_3">
+    <property name="title">
+     <string>轰炸步骤</string>
+    </property>
+   </widget>
+   <widget class="QMenu" name="menu_4">
+    <property name="title">
+     <string>增援步骤</string>
+    </property>
+   </widget>
+   <widget class="QMenu" name="menu_5">
+    <property name="title">
+     <string>生产步骤</string>
+    </property>
+   </widget>
+   <widget class="QMenu" name="menu_6">
+    <property name="title">
+     <string>国力步骤</string>
+    </property>
+   </widget>
+   <addaction name="menu"/>
+   <addaction name="menu_2"/>
+   <addaction name="menu_3"/>
+   <addaction name="menu_4"/>
+   <addaction name="menu_5"/>
+   <addaction name="menu_6"/>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
   <widget class="QToolBar" name="toolBar">
-   <property name="font">
-    <font>
-     <pointsize>14</pointsize>
-    </font>
-   </property>
-   <property name="windowTitle">
-    <string>toolBar</string>
-   </property>
-   <property name="movable">
-    <bool>false</bool>
-   </property>
-   <property name="allowedAreas">
-    <set>Qt::ToolBarArea::TopToolBarArea</set>
-   </property>
-   <property name="iconSize">
-    <size>
-     <width>36</width>
-     <height>36</height>
-    </size>
-   </property>
-   <property name="floatable">
-    <bool>false</bool>
-   </property>
-   <attribute name="toolBarArea">
-    <enum>TopToolBarArea</enum>
-   </attribute>
-   <attribute name="toolBarBreak">
-    <bool>false</bool>
-   </attribute>
-   <addaction name="action1"/>
-   <addaction name="action2"/>
-   <addaction name="action3"/>
-   <addaction name="action4"/>
-   <addaction name="action5"/>
-   <addaction name="action6"/>
-  </widget>
-  <widget class="QToolBar" name="menuView">
    <property name="font">
     <font>
      <pointsize>14</pointsize>
@@ -234,19 +236,13 @@
    <attribute name="toolBarBreak">
     <bool>false</bool>
    </attribute>
-   <addaction name="action_DTZ"/>
-   <addaction name="action_STZ"/>
   </widget>
   <action name="action1">
    <property name="checkable">
     <bool>true</bool>
    </property>
-   <property name="icon">
-    <iconset resource="res.qrc">
-     <normaloff>:/res/BZ/BZ1_SJ.png</normaloff>:/res/BZ/BZ1_SJ.png</iconset>
-   </property>
    <property name="text">
-    <string>事件步骤</string>
+    <string>事件：苏联预备队</string>
    </property>
    <property name="menuRole">
     <enum>QAction::MenuRole::NoRole</enum>
@@ -255,10 +251,6 @@
   <action name="action2">
    <property name="checkable">
     <bool>true</bool>
-   </property>
-   <property name="icon">
-    <iconset resource="res.qrc">
-     <normaloff>:/res/BZ/BZ1_SJ.png</normaloff>:/res/BZ/BZ1_SJ.png</iconset>
    </property>
    <property name="text">
     <string>行动步骤</string>
@@ -274,10 +266,6 @@
    <property name="checkable">
     <bool>true</bool>
    </property>
-   <property name="icon">
-    <iconset resource="res.qrc">
-     <normaloff>:/res/BZ/BZ1_SJ.png</normaloff>:/res/BZ/BZ1_SJ.png</iconset>
-   </property>
    <property name="text">
     <string>轰炸步骤</string>
    </property>
@@ -291,10 +279,6 @@
   <action name="action4">
    <property name="checkable">
     <bool>true</bool>
-   </property>
-   <property name="icon">
-    <iconset resource="res.qrc">
-     <normaloff>:/res/BZ/BZ1_SJ.png</normaloff>:/res/BZ/BZ1_SJ.png</iconset>
    </property>
    <property name="text">
     <string>增援步骤</string>
@@ -310,10 +294,6 @@
    <property name="checkable">
     <bool>true</bool>
    </property>
-   <property name="icon">
-    <iconset resource="res.qrc">
-     <normaloff>:/res/BZ/BZ1_SJ.png</normaloff>:/res/BZ/BZ1_SJ.png</iconset>
-   </property>
    <property name="text">
     <string>生产步骤</string>
    </property>
@@ -327,10 +307,6 @@
   <action name="action6">
    <property name="checkable">
     <bool>true</bool>
-   </property>
-   <property name="icon">
-    <iconset resource="res.qrc">
-     <normaloff>:/res/BZ/BZ1_SJ.png</normaloff>:/res/BZ/BZ1_SJ.png</iconset>
    </property>
    <property name="text">
     <string>国力步骤</string>
@@ -367,6 +343,22 @@
    </property>
    <property name="toolTip">
     <string>苏联掷骰</string>
+   </property>
+   <property name="menuRole">
+    <enum>QAction::MenuRole::NoRole</enum>
+   </property>
+  </action>
+  <action name="action_S">
+   <property name="text">
+    <string>苏联先手</string>
+   </property>
+   <property name="menuRole">
+    <enum>QAction::MenuRole::NoRole</enum>
+   </property>
+  </action>
+  <action name="action_D">
+   <property name="text">
+    <string>德国先手</string>
    </property>
    <property name="menuRole">
     <enum>QAction::MenuRole::NoRole</enum>

@@ -41,6 +41,10 @@ private slots:
     void on_action_DTZ_triggered();
     void on_action_STZ_triggered();
 
+    void on_action_S_triggered();
+
+    void on_action_D_triggered();
+
 private:
     void initActions();
     void initDockSystem();
@@ -122,7 +126,4 @@ private:
 
     void refreshActionSegUI();
     void endCurrentActionPhase();
-
-    Side m_nextSideToPlayToken = Side::Unknown;
-    void initFirstPlayerByDice();
 };

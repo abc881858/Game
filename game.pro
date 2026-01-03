@@ -3,6 +3,7 @@ QT += core gui widgets opengl
 CONFIG += c++17
 
 SOURCES += \
+    battledialog.cpp \
     eventdialog.cpp \
     gamecontroller.cpp \
     graphicsframe.cpp \
@@ -19,6 +20,7 @@ SOURCES += \
     util.cpp
 
 HEADERS += \
+    battledialog.h \
     dragdrop.h \
     eventdialog.h \
     gamecontroller.h \

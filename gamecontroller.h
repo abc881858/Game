@@ -35,8 +35,6 @@ public:
     void refreshMovablePieces();
     bool canDragFromReserve(Side side) const;
 
-    void setNextSideToPlayToken(Side s) { m_nextSideToPlayToken = s; }
-    bool canPlayActionToken(Side side) const;
     bool canDragUnitInMoveSeg(Side side) const;
 
 public slots:
@@ -86,5 +84,4 @@ private:
     // 维护“占领方”（没有更完整规则时先这么做）
     QHash<int, Side> m_owner;
 
-    Side m_nextSideToPlayToken = Side::Unknown;
 };
