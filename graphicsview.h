@@ -34,8 +34,6 @@ private:
     PlacementManager* m_placementManager = nullptr;
 
 signals:
-    void eventPiecePlaced(const QString& eventId, const QString& pixPath, int regionId);
-    void piecePlaced(const QString& pixResPath, int regionId);
     void actionTokenDropped(const QString& pixPath);
     void pieceDropped(const QString& pixPath, const QString& eventId, int regionId, bool isEvent);
 };

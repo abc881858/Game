@@ -138,7 +138,6 @@ private:
     // 维护“占领方”（没有更完整规则时先这么做）
     QHash<int, Side> m_owner;
 
-    void notifyState() { emit stateChanged(); }
     void syncPhaseFlagsToMoveRules();
     bool phaseActive() const { return m_phase.active; }
     Side phaseSide()  const { return m_phase.activeSide; }

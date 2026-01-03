@@ -425,28 +425,31 @@ void GameController::addTurn(int delta)
     if (m_state.turn < 1) m_state.turn = 1;
     if (m_state.turn > 8) m_state.turn = 8;
 
-    notifyState();
+    emit stateChanged();
 }
 
 void GameController::addNationalPower(Side side, int delta)
 {
     if (side!=Side::D && side!=Side::S) return;
     m_state.npRef(side) += delta;
-    notifyState();
+
+    emit stateChanged();
 }
 
 void GameController::addOil(Side side, int delta)
 {
     if (side!=Side::D && side!=Side::S) return;
     m_state.oilRef(side) += delta;
-    notifyState();
+
+    emit stateChanged();
 }
 
 void GameController::addReadyPoints(Side side, int delta)
 {
     if (side!=Side::D && side!=Side::S) return;
     m_state.rpRef(side) += delta;
-    notifyState();
+
+    emit stateChanged();
 }
 
 void GameController::addAP(Side side, int delta)
@@ -454,7 +457,8 @@ void GameController::addAP(Side side, int delta)
     if (side!=Side::D && side!=Side::S) return;
 
     m_state.apRef(side) += delta;
-    notifyState();
+
+    emit stateChanged();
 
     // 行动阶段：delta>0 且未active -> start
     if (delta > 0 && !m_phase.active) {
@@ -477,6 +481,8 @@ void GameController::clearAP(Side side)
 {
     if (side!=Side::D && side!=Side::S) return;
     m_state.apRef(side) = 0;
-    notifyState();
+
+    emit stateChanged();
+
     refreshMovablePieces();
 }

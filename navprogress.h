@@ -70,7 +70,7 @@ public:
     QSize sizeHint()                const;
     QSize minimumSizeHint()         const;
 
-public Q_SLOTS:
+public slots:
     //设置导航顶部标签数据
     void setTopInfo(const QStringList &topInfo);
     //设置导航底部标签数据

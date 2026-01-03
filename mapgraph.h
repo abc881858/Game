@@ -4,7 +4,8 @@
 #include <QPair>
 #include <QSet>
 
-class MapGraph {
+class MapGraph
+{
 public:
     MapGraph();
 
