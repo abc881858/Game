@@ -119,6 +119,7 @@ signals:
     void stateChanged(const GameState& st);
 private:
     PieceItem* createPieceFromPixPath(const QString& pixPath);
+    void rollbackToRegion(PieceItem* piece, int regionId, const QString& reason = QString());
 
     QGraphicsScene* m_scene = nullptr;
     PlacementManager*    m_placementManager = nullptr;

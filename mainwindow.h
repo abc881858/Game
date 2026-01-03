@@ -27,8 +27,6 @@ public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
-    void addPiece(PieceListWidget* list, const QString& name, const QString& pixResPath, int count);
-
 public slots:
     void appendLog(const QString &line, const QColor &color, bool newLine);
 

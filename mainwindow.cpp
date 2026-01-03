@@ -298,11 +298,23 @@ void MainWindow::initPieceLists()
     pieceListWidget_D = createPieceList(ui->D_DMQ);
     pieceListWidget_S = createPieceList(ui->S_DMQ);
 
-    pieceListWidget_D->setSide(Side::D);
-    pieceListWidget_S->setSide(Side::S);
-
     pieceListWidget_D->setGameController(m_gameController);
     pieceListWidget_S->setGameController(m_gameController);
+
+    auto addPiece = [](PieceListWidget* list, const QString& name, const QString& pixResPath, int count) {
+        if (!list) return;
+
+        auto* it = new QListWidgetItem;
+        it->setSizeHint(QSize(220, 80));
+        it->setData(Qt::UserRole, pixResPath);
+        it->setData(Qt::UserRole + 1, count);
+
+        list->addItem(it);
+
+        auto* w = new PieceEntryWidget(QIcon(pixResPath), name, list);
+        w->setCount(count);
+        list->setItemWidget(it, w);
+    };
 
     using Def = std::tuple<const char*, const char*, int>;
 
@@ -383,15 +395,17 @@ void MainWindow::initPieceLists()
         {"精锐装甲兵",":/S/S_JRZJB.png", 0},
     };
 
-    auto addAll = [this](PieceListWidget* list, const Def* arr, int n){
+    auto fillList = [&](PieceListWidget* list, Side side, const Def* arr, int n) {
+        if (!list) return;
+        list->setSide(side);
         for (int i = 0; i < n; ++i) {
             const auto& [name, path, cnt] = arr[i];
             addPiece(list, QString::fromUtf8(name), QString::fromUtf8(path), cnt);
         }
     };
 
-    addAll(pieceListWidget_D, D, int(std::size(D)));
-    addAll(pieceListWidget_S, S, int(std::size(S)));
+    fillList(pieceListWidget_D, Side::D, D, int(std::size(D)));
+    fillList(pieceListWidget_S, Side::S, S, int(std::size(S)));
 }
 
 void MainWindow::initGameBoardPieces()
@@ -476,25 +490,6 @@ void MainWindow::on_action_STZ_triggered()
 {
     int num = QRandomGenerator::global()->bounded(1, 7);
     appendLog(QString("苏联掷骰子：%1\n").arg(num), QColor(183,100,50), true);
-}
-
-void MainWindow::addPiece(PieceListWidget* list,
-                          const QString& name,
-                          const QString& pixResPath,
-                          int count)
-{
-    if (!list) return;
-
-    auto* it = new QListWidgetItem;
-    it->setSizeHint(QSize(220, 80));
-    it->setData(Qt::UserRole, pixResPath);
-    it->setData(Qt::UserRole + 1, count);
-
-    list->addItem(it);
-
-    auto* w = new PieceEntryWidget(QIcon(pixResPath), name, list);
-    w->setCount(count);
-    list->setItemWidget(it, w);
 }
 
 void MainWindow::appendLog(const QString& line, const QColor& color, bool newLine)

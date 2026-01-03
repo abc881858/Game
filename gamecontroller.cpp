@@ -244,6 +244,27 @@ bool GameController::canDragFromReserve(Side side) const
     return true;
 }
 
+void GameController::rollbackToRegion(PieceItem* piece, int regionId, const QString& reason)
+{
+    if (!piece || !m_placementManager) return;
+    if (regionId < 0) return;
+
+    if (!reason.isEmpty()) {
+        emit logLine(reason, Qt::black, true);
+    }
+
+    // 1) 图元位置：回到 lastValidPos（你已有 snap/mark 体系）
+    piece->setInLayout(true);
+    piece->setPos(piece->lastValidPos());
+    piece->setInLayout(false);
+
+    // 2) 逻辑位置：放回 region（会触发该 region 的重排布局）
+    m_placementManager->movePieceToRegion(piece, regionId);
+
+    // 3) lastValid 仍然保持为 regionId（避免出现 lastValid 与当前 region 不一致）
+    piece->markLastValid(regionId);
+}
+
 void GameController::onPieceMovedRegionToRegion(PieceItem *piece, int fromRegionId, int toRegionId, Side side)
 {
     if (!piece) return;
@@ -253,8 +274,7 @@ void GameController::onPieceMovedRegionToRegion(PieceItem *piece, int fromRegion
 
     // 已因“进入敌占格”被锁住，则回滚
     if (piece->movedThisActionPhase()) {
-        emit logLine("本行动阶段该兵团已进入敌占格，不能继续移动，已回滚。\n", Qt::black, true);
-        piece->snapToNearestRegion(); // 会回滚到 lastValid（你已有逻辑）
+        rollbackToRegion(piece, fromRegionId, "本行动阶段该兵团已进入敌占格，不能继续移动，已回滚。\n");
         return;
     }
 
@@ -263,13 +283,7 @@ void GameController::onPieceMovedRegionToRegion(PieceItem *piece, int fromRegion
     blocked.remove(fromRegionId); // 起点不算阻挡
     int dist = m_graph.shortestDistance(fromRegionId, toRegionId, blocked);
     if (dist < 0) {
-        emit logLine("移动失败：无可达陆上路线（可能被敌方兵团/要塞阻挡），已回滚。\n", Qt::black, true);
-        // 回滚到上一次合法位置
-        piece->setInLayout(true);
-        piece->setPos(piece->lastValidPos());
-        piece->setInLayout(false);
-        m_placementManager->movePieceToRegion(piece, fromRegionId);
-        piece->markLastValid(fromRegionId);
+        rollbackToRegion(piece, fromRegionId, "移动失败：无可达陆上路线（可能被敌方兵团/要塞阻挡），已回滚。\n");
         return;
     }
 
@@ -277,17 +291,13 @@ void GameController::onPieceMovedRegionToRegion(PieceItem *piece, int fromRegion
     const int apNow = currentAP(side);
 
     if (apNow < cost) {
-        emit logLine(QString("移动失败：距离=%1 需AP=%2 当前AP=%3，不足，已回滚。\n")
-                     .arg(dist).arg(cost).arg(apNow), Qt::black, true);
-        m_placementManager->movePieceToRegion(piece, fromRegionId);
-        piece->markLastValid(fromRegionId);
+        rollbackToRegion(piece, fromRegionId, QString("移动失败：距离=%1 需AP=%2 当前AP=%3，不足，已回滚。\n").arg(dist).arg(cost).arg(apNow));
         return;
     }
 
     // 扣行动点（统一入口 addAP，会触发 stateChanged/刷新可拖拽）
     addAP(side, -cost);
-    emit logLine(QString("陆上移动：%1 -> %2 距离=%3 扣AP=%4\n")
-                 .arg(fromRegionId).arg(toRegionId).arg(dist).arg(cost), Qt::black, true);
+    emit logLine(QString("陆上移动：%1 -> %2 距离=%3 扣AP=%4\n").arg(fromRegionId).arg(toRegionId).arg(dist).arg(cost), Qt::black, true);
 
     // 占领判定：如果进入敌占格，则占领并锁住本阶段继续移动
     Side owner = m_owner.value(toRegionId, Side::Unknown);
