@@ -32,13 +32,13 @@ public slots:
     void refreshStatusUI();
 
 private:
-    void initActions();
     void initDockSystem();
     void initCentralView();
     void initScene();
     void initControllers();
     void initLogDock();
     void initStatusDock();
+    void initActions();
     void initRegionItems();
     void initPieceLists();
     void initGameBoardPieces();

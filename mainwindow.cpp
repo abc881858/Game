@@ -71,13 +71,13 @@ MainWindow::MainWindow(QWidget *parent)
     ui->D->setCurrentIndex(0);
     ui->S->setCurrentIndex(0);
 
-    initActions();
     initDockSystem();
     initCentralView();
     initScene();
     initControllers();
     initLogDock();
     initStatusDock();
+    initActions();
     initRegionItems();
     initPieceLists();
     initGameBoardPieces();
@@ -93,23 +93,6 @@ MainWindow::~MainWindow()
 // =====================================================
 // 初始化阶段
 // =====================================================
-
-void MainWindow::initActions()
-{
-    auto* tbSeg = addToolBar("行动环节");
-    tbSeg->setMovable(false);
-    tbSeg->setIconSize(QSize(36,36));
-    tbSeg->setFont(QFont(QString("MicrosoftYaHei UI"), 14));
-
-    m_navProgress = new NavProgress(this);
-    tbSeg->addWidget(m_navProgress);
-    m_navProgress->setTopInfo(QStringList() << "陆上移动" << "陆战" << "调动" << "准备" << "补给");
-    m_navProgress->setCurrentStep(0);
-    m_navProgress->setCurrentBackground(QColor(24,189,155));
-
-    tbSeg->addAction(ui->action_End);
-}
-
 void MainWindow::initDockSystem()
 {
     auto *hostLayout = new QVBoxLayout(ui->dockWidget);
@@ -226,10 +209,6 @@ void MainWindow::initLogDock()
     logDock->toggleView(false);
 }
 
-// =====================================================
-// 状态 Dock
-// =====================================================
-
 void MainWindow::initStatusDock()
 {
     auto *statusDock = new ads::CDockWidget("状态");
@@ -288,6 +267,19 @@ void MainWindow::initStatusDock()
     ui->toolBar->addAction(statusAction);
 
     statusDock->toggleView(false);
+}
+
+void MainWindow::initActions()
+{
+    m_navProgress = new NavProgress(this);
+    m_navProgress->setTopInfo(QStringList() << "陆上移动" << "陆战" << "调动" << "准备" << "补给");
+    m_navProgress->setCurrentStep(0);
+    m_navProgress->setCurrentBackground(QColor(24,189,155));
+
+    ui->toolBar->addWidget(m_navProgress);
+    ui->toolBar->addAction(ui->action_End);
+    ui->toolBar->addAction(ui->action_DTZ);
+    ui->toolBar->addAction(ui->action_STZ);
 }
 
 void MainWindow::initRegionItems()

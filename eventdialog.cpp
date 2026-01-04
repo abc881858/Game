@@ -17,20 +17,27 @@ protected:
         auto *it = currentItem();
         if (!it) return;
 
+        const int srcRow = row(it);
         const QString eventId = it->data(Qt::UserRole + 1).toString();
         const QString pixPath = it->data(Qt::UserRole).toString();
 
         auto *mime = new QMimeData;
-        mime->setData(DragDrop::MimeEventPiece, DragDrop::packEventPiece(eventId, pixPath).toUtf8());
+        mime->setData(DragDrop::MimeEventPiece,
+                      DragDrop::packEventPiece(eventId, pixPath).toUtf8());
 
-        auto *drag = new QDrag(this);
-        drag->setMimeData(mime);
+        QDrag drag(this);
+        drag.setMimeData(mime);
 
         QPixmap pm(pixPath);
-        drag->setPixmap(pm.scaled(64,64, Qt::KeepAspectRatio, Qt::SmoothTransformation));
-        drag->setHotSpot(QPoint(drag->pixmap().width()/2, drag->pixmap().height()/2));
+        drag.setPixmap(pm.scaled(64, 64, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+        drag.setHotSpot(QPoint(drag.pixmap().width()/2, drag.pixmap().height()/2));
 
-        drag->exec(Qt::MoveAction);
+        const Qt::DropAction act = drag.exec(Qt::MoveAction, Qt::MoveAction);
+        if (act == Qt::MoveAction) {
+            if (srcRow >= 0 && srcRow < count()) {
+                delete takeItem(srcRow);
+            }
+        }
     }
 };
 
@@ -73,15 +80,4 @@ void EventDialog::addEventPiece(const QString& name, const QString& pixResPath, 
 void EventDialog::onEventPiecePlaced(const QString& eventId, const QString& pixPath, int)
 {
     if (eventId != m_eventId) return;
-
-    // 删掉一个同 pixPath 的条目（对应“对话框里兵团消失”）
-    for (int i=0;i<list->count();++i) {
-        auto* it = list->item(i);
-        if (it->data(Qt::UserRole).toString() == pixPath) {
-            delete list->takeItem(i);
-            break;
-        }
-    }
-
-    if (list->count() == 0) accept();
 }

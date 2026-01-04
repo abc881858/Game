@@ -219,7 +219,7 @@
     </font>
    </property>
    <property name="windowTitle">
-    <string>toolBar_2</string>
+    <string>行动环节</string>
    </property>
    <property name="movable">
     <bool>false</bool>

@@ -9,8 +9,7 @@ GraphicsFrame::GraphicsFrame(QWidget *parent)
     setFrameStyle(Sunken | StyledPanel);
     m_graphicsView = new GraphicsView(this);
 
-    // m_graphicsView->setRenderHint(QPainter::Antialiasing, false);
-    // m_graphicsView->setViewport(new QGLWidget(QGLFormat(QGL::SampleBuffers)) : new QWidget);
+    m_graphicsView->setRenderHint(QPainter::Antialiasing, true);
     m_graphicsView->setOptimizationFlags(QGraphicsView::DontSavePainterState);
     m_graphicsView->setViewportUpdateMode(QGraphicsView::SmartViewportUpdate);
     m_graphicsView->setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
