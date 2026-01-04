@@ -291,6 +291,24 @@
     <enum>QAction::MenuRole::NoRole</enum>
    </property>
   </action>
+  <action name="action_End">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="res.qrc">
+     <normaloff>:/res/end.png</normaloff>:/res/end.png</iconset>
+   </property>
+   <property name="text">
+    <string>结束环节</string>
+   </property>
+   <property name="toolTip">
+    <string>结束环节</string>
+   </property>
+   <property name="menuRole">
+    <enum>QAction::MenuRole::NoRole</enum>
+   </property>
+  </action>
  </widget>
  <resources>
   <include location="res.qrc"/>

@@ -300,25 +300,6 @@ void GameController::refreshMovablePieces()
     }
 }
 
-bool GameController::canDragFromReserve(Side side) const
-{
-    if (side == Side::Unknown) return false;
-
-    // 没进入行动阶段：不允许
-    if (!phaseActive()) return false;
-
-    // 不是陆上移动环节：不允许
-    if (!inMoveSeg()) return false;
-
-    // 不是当前行动方：不允许
-    if (side != phaseSide()) return false;
-
-    // AP=0：不允许
-    if (currentAP(phaseSide()) <= 0) return false;
-
-    return true;
-}
-
 void GameController::rollbackToRegion(PieceItem* piece, int regionId, const QString& reason)
 {
     if (!piece || !m_placementManager) return;

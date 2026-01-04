@@ -31,12 +31,6 @@ public slots:
     void appendLog(const QString &line, const QColor &color, bool newLine);
     void refreshStatusUI();
 
-private slots:
-    void on_action_DTZ_triggered();
-    void on_action_STZ_triggered();
-    void on_action_S_triggered();
-    void on_action_D_triggered();
-
 private:
     void initActions();
     void initDockSystem();
@@ -48,7 +42,6 @@ private:
     void initRegionItems();
     void initPieceLists();
     void initGameBoardPieces();
-    void initEventActions();
 
     PieceListWidget* createPieceList(QWidget* host);
 
@@ -89,5 +82,4 @@ private:
     QLabel* m_rpLabelS = nullptr;
 
     NavProgress *m_navProgress;
-    QAction* actEndSeg = nullptr;      // “结束当前环节”
 };

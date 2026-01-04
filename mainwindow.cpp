@@ -82,7 +82,6 @@ MainWindow::MainWindow(QWidget *parent)
     initPieceLists();
     initGameBoardPieces();
     m_gameController->refreshMovablePieces();
-    initEventActions();
     refreshStatusUI();
 }
 
@@ -108,9 +107,7 @@ void MainWindow::initActions()
     m_navProgress->setCurrentStep(0);
     m_navProgress->setCurrentBackground(QColor(24,189,155));
 
-    actEndSeg = tbSeg->addAction("结束环节");
-    actEndSeg->setIcon(QIcon(":/res/end.png"));
-    actEndSeg->setEnabled(false);
+    tbSeg->addAction(ui->action_End);
 }
 
 void MainWindow::initDockSystem()
@@ -155,7 +152,45 @@ void MainWindow::initControllers()
 
     m_gameController = new GameController(scene, m_placementManager, this);
 
-    connect(actEndSeg, &QAction::triggered, m_gameController, &GameController::advanceSegment);
+    connect(ui->action_End, &QAction::triggered, m_gameController, &GameController::advanceSegment);
+
+    connect(ui->action1, &QAction::triggered, this, [this](){
+        QSet<int> allowed = { 2,3,4,5,6,7,8,9,10,11,12,13,16,17,18,19,20,22,23,24,25,26,27,28,31,32,33,34 };
+        m_gameController->setEventAllowedRegions(allowed);
+
+        auto* dlg = new EventDialog(this);
+
+        connect(m_gameController, &GameController::eventPiecePlaced, dlg, &EventDialog::onEventPiecePlaced);
+
+        connect(dlg, &QDialog::finished, this, [this, dlg](int){
+            m_gameController->clearEventAllowedRegions();
+            dlg->deleteLater();
+        });
+
+        dlg->setEventId("SLYBD");//事件-苏联预备队
+        dlg->addEventPiece("4级兵团", ":/S/S_4JBT.png", 3);
+        dlg->show();
+    });
+
+    connect(ui->action_D, &QAction::triggered, this, [this](){
+        if (!m_gameController) return;
+        m_gameController->setFirstPlayer(Side::D);
+    });
+
+    connect(ui->action_S, &QAction::triggered, this, [this](){
+        if (!m_gameController) return;
+        m_gameController->setFirstPlayer(Side::S);
+    });
+
+    connect(ui->action_DTZ, &QAction::triggered, this, [this](){
+        int num = QRandomGenerator::global()->bounded(1, 7);
+        appendLog(QString("德国掷骰子：%1\n").arg(num), Qt::black, true);
+    });
+
+    connect(ui->action_STZ, &QAction::triggered, this, [this](){
+        int num = QRandomGenerator::global()->bounded(1, 7);
+        appendLog(QString("苏联掷骰子：%1\n").arg(num), QColor(183,100,50), true);
+    });
 
     connect(m_graphicsView, &GraphicsView::pieceDropped, m_gameController, &GameController::onPieceDropped);
 
@@ -164,7 +199,7 @@ void MainWindow::initControllers()
     connect(m_gameController, &GameController::logLine, this, &MainWindow::appendLog);
 
     connect(m_gameController, &GameController::requestEndSegEnabled, this, [this](bool en){
-        if (actEndSeg) actEndSeg->setEnabled(en);
+        if (ui->action_End) ui->action_End->setEnabled(en);
     });
 
     connect(m_gameController, &GameController::requestNavStep, this, [this](int step){
@@ -427,28 +462,6 @@ void MainWindow::initGameBoardPieces()
     spawn(34, ":/S/S_3JBT.png"); // 巴库
 }
 
-void MainWindow::initEventActions()
-{
-    // action1：事件投放
-    connect(ui->action1, &QAction::triggered, this, [this](){
-        QSet<int> allowed = { 2,3,4,5,6,7,8,9,10,11,12,13,16,17,18,19,20,22,23,24,25,26,27,28,31,32,33,34 };
-        m_gameController->setEventAllowedRegions(allowed);
-
-        auto* dlg = new EventDialog(this);
-
-        connect(m_gameController, &GameController::eventPiecePlaced, dlg, &EventDialog::onEventPiecePlaced);
-
-        connect(dlg, &QDialog::finished, this, [this, dlg](int){
-            m_gameController->clearEventAllowedRegions();
-            dlg->deleteLater();
-        });
-
-        dlg->setEventId("SLYBD");//事件-苏联预备队
-        dlg->addEventPiece("4级兵团", ":/S/S_4JBT.png", 3);
-        dlg->show();
-    });
-}
-
 void MainWindow::refreshStatusUI()
 {
     if (!m_gameController) return;
@@ -467,22 +480,6 @@ void MainWindow::refreshStatusUI()
     if (m_rpLabelS)  m_rpLabelS->setText(QString::number(st.rpS));
 }
 
-// =====================================================
-// 逻辑函数
-// =====================================================
-
-void MainWindow::on_action_DTZ_triggered()
-{
-    int num = QRandomGenerator::global()->bounded(1, 7);
-    appendLog(QString("德国掷骰子：%1\n").arg(num), Qt::black, true);
-}
-
-void MainWindow::on_action_STZ_triggered()
-{
-    int num = QRandomGenerator::global()->bounded(1, 7);
-    appendLog(QString("苏联掷骰子：%1\n").arg(num), QColor(183,100,50), true);
-}
-
 void MainWindow::appendLog(const QString& line, const QColor& color, bool newLine)
 {
     if (!logTextEdit) return;
@@ -494,16 +491,4 @@ void MainWindow::appendLog(const QString& line, const QColor& color, bool newLin
     cursor.movePosition(QTextCursor::End);
     cursor.insertText(newLine ? (line + "\n") : line, fmt);
     logTextEdit->setTextCursor(cursor);
-}
-
-void MainWindow::on_action_D_triggered()
-{
-    if (!m_gameController) return;
-    m_gameController->setFirstPlayer(Side::D);
-}
-
-void MainWindow::on_action_S_triggered()
-{
-    if (!m_gameController) return;
-    m_gameController->setFirstPlayer(Side::S);
 }

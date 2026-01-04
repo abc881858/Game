@@ -88,7 +88,6 @@ public:
                                      bool isEvent = false);
 
     void resetAllPiecesMoveFlag();
-    bool canDragFromReserve(Side side) const;
     bool canDragUnitInMoveSeg(Side side) const;
 
     void setFirstPlayer(Side side);                 // 点击“德国/苏联先手”
