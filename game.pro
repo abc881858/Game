@@ -4,6 +4,8 @@ CONFIG += c++17
 
 SOURCES += \
     battledialog.cpp \
+    battlefielddialog.cpp \
+    battlesetupdialog.cpp \
     eventdialog.cpp \
     gamecontroller.cpp \
     graphicsframe.cpp \
@@ -17,10 +19,14 @@ SOURCES += \
     piecelistwidget.cpp \
     placementmanager.cpp \
     regionitem.cpp \
+    strikegroupdialog.cpp \
     util.cpp
 
 HEADERS += \
+    battlecontext.h \
     battledialog.h \
+    battlefielddialog.h \
+    battlesetupdialog.h \
     dragdrop.h \
     eventdialog.h \
     gamecontroller.h \
@@ -34,6 +40,7 @@ HEADERS += \
     piecelistwidget.h \
     placementmanager.h \
     regionitem.h \
+    strikegroupdialog.h \
     util.h
 
 FORMS += \

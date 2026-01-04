@@ -7,6 +7,11 @@
 #include "placementmanager.h"
 #include "util.h"
 
+#include "battlesetupdialog.h"
+#include "strikegroupdialog.h"
+#include "battlefielddialog.h"
+#include <QMessageBox>
+
 static inline bool isActionTokenPath(const QString& pixPath)
 {
     return pixPath.contains("_XDQ", Qt::CaseSensitive);
@@ -51,11 +56,59 @@ void GameController::onPieceDropped(const QString& pixPath,
                                    int regionId,
                                    bool isEvent)
 {
-    // 行动签不走这里（保险）
     if (isActionTokenPath(pixPath)) return;
 
+    // ===== 战斗：打击群投入阶段 =====
+    if (m_battle.active && m_battleStep == BattleStep::SetupStrike) {
+        // 只有轮到的一方能投入
+        if (phaseSide() == Side::Unknown) {} // 不依赖行动阶段也行
+        if (m_strikeTurn == Side::Unknown) return;
+
+        // 过滤兵团（兵团不走这里，兵团靠拖进敌占区触发）
+        Side s; int lvl;
+        if (parseCorpsFromPixPath(pixPath, s, lvl)) {
+            emit logLine("当前是打击群投入阶段：请拖入打击群（飞机等），不是兵团。\n", Qt::black, true);
+            return;
+        }
+
+        // 必须把打击群拖到战斗区（同一个 region）
+        if (regionId != m_battle.battleRegionId) {
+            emit logLine("打击群投入失败：请拖到当前战斗区。\n", Qt::black, true);
+            return;
+        }
+
+        // 判定精锐绑定
+        bool elite = pixPath.contains("JR", Qt::CaseInsensitive);
+        bool bind = false;
+        if (elite) {
+            auto r = QMessageBox::question(nullptr, "精锐",
+                                          "检测到精锐单位，是否绑定精锐？",
+                                          QMessageBox::Yes|QMessageBox::No);
+            bind = (r == QMessageBox::Yes);
+        }
+
+        StrikeGroupEntry e{pixPath, bind};
+
+        if (m_strikeTurn == m_battle.attacker) {
+            m_battle.strikeA.push_back(e);
+            m_strikeAtkPassed = false; // 一旦投入，撤销 pass
+        } else {
+            m_battle.strikeD.push_back(e);
+            m_strikeDefPassed = false;
+        }
+
+        emit logLine(QString("打击群投入：%1 -> region %2\n").arg(pixPath).arg(regionId), Qt::black, true);
+
+        // 投入后切换回合
+        m_strikeTurn = (m_strikeTurn == m_battle.attacker) ? m_battle.defender : m_battle.attacker;
+        emit strikeGroupsChanged(m_battle.strikeA, m_battle.strikeD, m_strikeTurn, false);
+        return;
+    }
+
+    // ===== 原逻辑：落子生成 PieceItem（普通/事件）=====
     placeNewPieceToRegion(regionId, pixPath, 20.0, eventId, isEvent);
 }
+
 
 void GameController::onActionTokenDropped(const QString& pixPath)
 {
@@ -151,6 +204,14 @@ PieceItem* GameController::placeNewPieceToRegion(int regionId,
     m_placementManager->movePieceToRegion(item, regionId);
     item->markLastValid(regionId);
 
+    // 如果这是兵团/要塞，且该 region 没写过 owner，则用该单位阵营初始化
+    if (item->kind() == PieceKind::Corps || item->kind() == PieceKind::Fortress) {
+        if (!m_owner.contains(regionId) || m_owner.value(regionId) == Side::Unknown) {
+            if (item->side() != Side::Unknown)
+                m_owner[regionId] = item->side();
+        }
+    }
+
     if (isEvent) {
         emit eventPiecePlaced(eventId, pixPath, regionId);
     }
@@ -218,7 +279,6 @@ void GameController::refreshMovablePieces()
     if (!m_scene) return;
 
     const Side side = phaseSide();
-    const int ap = currentAP(side);
 
     for (auto* gi : m_scene->items()) {
         if (gi->type() != PieceType) continue;
@@ -227,11 +287,10 @@ void GameController::refreshMovablePieces()
 
         bool movable =
             phaseActive() &&
-            inMoveSeg() &&
+            ( (m_phase.seg == ActionSeg::Move) || (m_phase.seg == ActionSeg::Battle) ) &&
             (side != Side::Unknown) &&
             (p->kind() == PieceKind::Corps) &&
-            (p->side() == side) &&
-            (ap > 0);
+            (p->side() == side);
 
         if (movable && p->movedThisActionPhase())
             movable = false;
@@ -284,9 +343,33 @@ void GameController::rollbackToRegion(PieceItem* piece, int regionId, const QStr
 void GameController::onPieceMovedRegionToRegion(PieceItem *piece, int fromRegionId, int toRegionId, Side side)
 {
     if (!piece) return;
-    if (!phaseActive() || !inMoveSeg()) return;// 只在“陆上移动环节”生效
-    if (side != phaseSide()) return;// 只能当前行动方移动
+    if (!phaseActive()) return;
+    if (side != phaseSide()) return;
     if (!m_placementManager) return;
+
+    // ====== 1) 陆战环节：拖进敌占区 => 发起/加入战斗 ======
+    if (inBattleSeg()) {
+        Side owner = m_owner.value(toRegionId, Side::Unknown);
+        if (owner != Side::Unknown && owner != side) {
+            // 可选：限制必须相邻
+            QSet<int> blocked; // 陆战投入不需要 blocked
+            int dist = m_graph.shortestDistance(fromRegionId, toRegionId, blocked);
+            if (dist != 1) {
+                rollbackToRegion(piece, fromRegionId, "陆战投入失败：只能投入相邻敌占区，已回滚。\n");
+                return;
+            }
+
+            tryStartBattleFromMove(piece, fromRegionId, toRegionId);
+            return; // 不再走下面 Move 环节逻辑
+        }
+
+        // 若不是敌占区：默认不允许随便挪（防误拖）
+        rollbackToRegion(piece, fromRegionId, "陆战环节：只能把兵团拖入敌占区以发起战斗，已回滚。\n");
+        return;
+    }
+
+    // ====== 2) 陆上移动环节：走你原有逻辑 ======
+    if (!inMoveSeg()) return;
 
     // 已因“进入敌占格”被锁住，则回滚
     if (piece->movedThisActionPhase()) {
@@ -353,7 +436,7 @@ void GameController::startActionPhase(Side side)
     resetAllPiecesMoveFlag();
 
     // 同步移动规则开关 + 刷新可拖拽
-    syncPhaseFlagsToMoveRules();
+    refreshMovablePieces();
 
     // 通知 UI
     emit requestEndSegEnabled(true);
@@ -373,7 +456,7 @@ void GameController::advanceSegment()
         m_phase.seg = ActionSeg(m_phase.segIndex);
 
         // 切换环节：同步移动规则（只有 Move 环节允许移动）
-        syncPhaseFlagsToMoveRules();
+        refreshMovablePieces();
 
         // UI 更新：NavProgress 用 1..5
         emit requestNavStep(m_phase.segIndex + 1);
@@ -414,7 +497,7 @@ void GameController::endActionPhase()
     m_phase.segIndex = 0;
     m_phase.seg = ActionSeg::Move;
 
-    syncPhaseFlagsToMoveRules();
+    refreshMovablePieces();
 
     emit requestNavStep(0);
     emit requestEndSegEnabled(false);
@@ -423,11 +506,6 @@ void GameController::endActionPhase()
     emit logLine(QString("行动阶段结束：下一张行动签由【%1】打出。\n")
                  .arg(nextSide==Side::D ? "德国" : "苏联"),
                  Qt::black, true);
-}
-
-void GameController::syncPhaseFlagsToMoveRules()
-{
-    refreshMovablePieces();
 }
 
 int GameController::currentAP(Side side) const
@@ -536,4 +614,168 @@ bool GameController::canDragActionToken(Side side) const
 
     // 只有轮到的那方可以拖行动签
     return side == m_nextActionTokenSide;
+}
+
+// 收集 pixPath
+QStringList GameController::unitPixList(const QList<PieceItem*>& v) const {
+    QStringList out;
+    for (auto* p : v) if (p) out << p->pixPath();
+    return out;
+}
+
+void GameController::syncBattleUnitsToDialog() {
+    emit battleUnitsChanged(unitPixList(m_battle.attackers), unitPixList(m_battle.defenders));
+}
+
+void GameController::tryStartBattleFromMove(PieceItem* piece, int from, int to)
+{
+    // 防守方=该格现有兵团所属（取第一个敌方兵团）
+    Side defSide = Side::Unknown;
+    auto defPieces = m_placementManager->piecesInRegion(to);
+    for (auto* p : defPieces) {
+        if (p && p->kind()==PieceKind::Corps && p->side()!=piece->side()) { defSide = p->side(); break; }
+    }
+    if (defSide == Side::Unknown) {
+        rollbackToRegion(piece, from, "该敌占区没有可识别的守军，已回滚。\n");
+        return;
+    }
+
+    // 如果当前没有战斗：创建战斗上下文
+    if (!m_battle.active) {
+        m_battle.active = true;
+        m_battle.battleRegionId = to;
+        m_battle.attacker = piece->side();
+        m_battle.defender = defSide;
+
+        // defenders = 该格所有 defender side 的兵团
+        m_battle.defenders.clear();
+        for (auto* p : defPieces) {
+            if (p && p->kind()==PieceKind::Corps && p->side()==defSide)
+                m_battle.defenders.push_back(p);
+        }
+
+        m_battle.attackers.clear();
+        m_battle.strikeA.clear();
+        m_battle.strikeD.clear();
+
+        // strike turn：默认攻方先
+        m_strikeTurn = m_battle.attacker;
+        m_strikeAtkPassed = false;
+        m_strikeDefPassed = false;
+
+        emit logLine(QString("宣战：region %1 开始陆战。\n").arg(to), Qt::black, true);
+
+        // 把当前 piece 作为第一支攻方投入
+        m_battle.attackers.push_back(piece);
+
+        // 打开 BattleSetupDialog
+        openBattleSetupDialog();
+        syncBattleUnitsToDialog();
+        return;
+    }
+
+    // 如果已有战斗：只能加入同一 battleRegion 且同一 attacker
+    if (to != m_battle.battleRegionId || piece->side() != m_battle.attacker) {
+        rollbackToRegion(piece, from, "已有战斗进行中：只能继续把攻方兵团投入同一战斗区，已回滚。\n");
+        return;
+    }
+
+    // 避免重复加入
+    if (!m_battle.attackers.contains(piece))
+        m_battle.attackers.push_back(piece);
+
+    syncBattleUnitsToDialog();
+}
+
+void GameController::openBattleSetupDialog()
+{
+    m_battleStep = BattleStep::SetupUnits;
+
+    // 用 parentWidget：从 scene/view 取一个窗口即可，这里简单用 nullptr 也行
+    auto* dlg = new BattleSetupDialog(nullptr);
+    dlg->setAttribute(Qt::WA_DeleteOnClose);
+    dlg->setSides(m_battle.attacker, m_battle.defender);
+    dlg->setRegionId(m_battle.battleRegionId);
+
+    connect(this, &GameController::battleUnitsChanged, dlg, &BattleSetupDialog::refreshUnits);
+
+    connect(dlg, &QDialog::finished, this, [this](int){
+        // 结束兵团投入 -> 进入打击群投入
+        openStrikeDialog();
+    });
+
+    dlg->show();
+
+    m_battleStep = BattleStep::SetupStrike;
+}
+
+void GameController::openStrikeDialog()
+{
+    m_battleStep = BattleStep::SetupUnits;
+
+    auto* dlg = new StrikeGroupDialog(nullptr);
+    dlg->setAttribute(Qt::WA_DeleteOnClose);
+    dlg->setSides(m_battle.attacker, m_battle.defender);
+
+    connect(this, &GameController::strikeGroupsChanged,
+            dlg, &StrikeGroupDialog::refreshStrikeGroups);
+
+    connect(dlg, &StrikeGroupDialog::passClicked, this, &GameController::onStrikePass);
+
+    // 初次刷新
+    emit strikeGroupsChanged(m_battle.strikeA, m_battle.strikeD, m_strikeTurn, false);
+
+    connect(dlg, &QDialog::finished, this, [this](int){
+        // 打击群结束 -> 战斗区展示
+        openBattlefieldDialog();
+
+        // 清战斗上下文（你也可以留着用于结算）
+        m_battle.active = false;
+    });
+
+    dlg->show();
+
+    m_battleStep = BattleStep::SetupStrike;
+}
+
+void GameController::openBattlefieldDialog()
+{
+    auto* dlg = new BattleFieldDialog(nullptr);
+    dlg->setAttribute(Qt::WA_DeleteOnClose);
+
+    dlg->setContent(unitPixList(m_battle.attackers),
+                    unitPixList(m_battle.defenders),
+                    m_battle.strikeA,
+                    m_battle.strikeD);
+
+    dlg->show();
+}
+
+void GameController::onStrikePass()
+{
+    if (!m_battle.active) return;
+
+    if (m_strikeTurn == m_battle.attacker) m_strikeAtkPassed = true;
+    else if (m_strikeTurn == m_battle.defender) m_strikeDefPassed = true;
+
+    // 如果双方都 pass：结束（让 StrikeGroupDialog accept）
+    if (m_strikeAtkPassed && m_strikeDefPassed) {
+        emit strikeGroupsChanged(m_battle.strikeA, m_battle.strikeD, m_strikeTurn, true);
+        // 这里不直接 accept，因为 dialog 在外部；
+        // 简单方式：发 finished 标志后，让 dialog 自己 close：
+        // 你也可以在 StrikeGroupDialog 收到 finished=true 时自动 accept()
+        return;
+    }
+
+    // 切换回合
+    m_strikeTurn = (m_strikeTurn == m_battle.attacker) ? m_battle.defender : m_battle.attacker;
+    emit strikeGroupsChanged(m_battle.strikeA, m_battle.strikeD, m_strikeTurn, false);
+}
+
+bool GameController::canDragUnitInBattleSeg(Side side) const
+{
+    if (!phaseActive()) return false;
+    if (!inBattleSeg()) return false;
+    if (side != phaseSide()) return false; // 只允许当前行动方
+    return true;
 }
