@@ -24,10 +24,11 @@ void PieceListWidget::startDrag(Qt::DropActions)
 
     if (m_controller) {
         if (isToken) {
-            if (!m_controller->canDragActionToken(m_side))
-                return;
+            if (!m_controller->canDragActionToken(m_side)) return;
         } else {
-            if (!m_controller->canDragUnitInMoveSeg(m_side))
+            // Move 或 Battle 都允许
+            if (!(m_controller->canDragUnitInMoveSeg(m_side) ||
+                  m_controller->canDragUnitInBattleSeg(m_side)))
                 return;
         }
     }

@@ -6,6 +6,7 @@
 #include "mapgraph.h"
 #include "util.h"
 #include "pieceitem.h"
+#include "battlecontext.h"
 
 class QGraphicsScene;
 class PlacementManager;
@@ -87,14 +88,17 @@ public:
                                      bool isEvent = false);
 
     void resetAllPiecesMoveFlag();
-    void refreshMovablePieces();
     bool canDragFromReserve(Side side) const;
     bool canDragUnitInMoveSeg(Side side) const;
 
     void setFirstPlayer(Side side);                 // 点击“德国/苏联先手”
     bool canDragActionToken(Side side) const;       // 先手阶段允许拖拽行动签
 
+    bool canDragUnitInBattleSeg(Side side) const;
+
 public slots:
+    void refreshMovablePieces();
+
     // 由 GraphicsView 在 dropEvent 中转发过来
     void onPieceDropped(const QString& pixPath, const QString& eventId, int regionId, bool isEvent);
 
@@ -140,7 +144,6 @@ private:
     // 维护“占领方”（没有更完整规则时先这么做）
     QHash<int, Side> m_owner;
 
-    void syncPhaseFlagsToMoveRules();
     bool phaseActive() const { return m_phase.active; }
     Side phaseSide()  const { return m_phase.activeSide; }
     bool inMoveSeg()  const { return m_phase.active && (m_phase.seg == ActionSeg::Move); }
@@ -149,4 +152,36 @@ private:
     ActionPhaseState m_phase; // 你已迁入的阶段机
 
     Side m_nextActionTokenSide = Side::Unknown;
+
+signals:
+    void battleUnitsChanged(const QStringList& atkPix, const QStringList& defPix);
+    void strikeGroupsChanged(const QList<StrikeGroupEntry>& atk,
+                             const QList<StrikeGroupEntry>& def,
+                             Side currentTurn,
+                             bool finished);
+
+public:
+    bool inBattleSeg() const { return m_phase.active && (m_phase.seg == ActionSeg::Battle); }
+
+private:
+    BattleContext m_battle;
+
+    // 打击群轮流
+    Side m_strikeTurn = Side::Unknown;
+    bool m_strikeAtkPassed = false;
+    bool m_strikeDefPassed = false;
+
+    void tryStartBattleFromMove(PieceItem* piece, int from, int to);
+    void openBattleSetupDialog();
+    void openStrikeDialog();
+    void openBattlefieldDialog();
+
+    QStringList unitPixList(const QList<PieceItem*>& v) const;
+    void syncBattleUnitsToDialog();
+
+    enum class BattleStep { None, SetupUnits, SetupStrike, ShowField };
+    BattleStep m_battleStep = BattleStep::None;
+
+public slots:
+    void onStrikePass();
 };
