@@ -24,7 +24,6 @@ public:
     PieceKind kind() const { return m_kind; }
     Side side() const { return m_side; }
     int level() const { return m_level; }
-    QString pixPath() const { return m_pixPath; }
 
     int type() const override { return PieceType; }
 
@@ -34,7 +33,6 @@ public:
     void markLastValid(int regionId) { m_lastValidRegionId = regionId; m_lastValidPos = pos(); }
 
     void setInLayout(bool v) { m_inLayout = v; }
-    bool inLayout() const { return m_inLayout; }
 
     QPointF lastValidPos() const { return m_lastValidPos; }
     int lastValidRegionId() const { return m_lastValidRegionId; }
@@ -46,8 +44,6 @@ protected:
 private:
     int m_regionId = -1;
     bool m_inLayout = false;
-
-    qreal snapRadius = 100.0; // 吸附半径（scene单位）
 
     int m_lastValidRegionId = -1;
     QPointF m_lastValidPos;
