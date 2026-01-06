@@ -212,10 +212,6 @@ PieceItem* GameController::placeNewPieceToRegion(int regionId,
         }
     }
 
-    if (isEvent) {
-        emit eventPiecePlaced(eventId, pixPath, regionId);
-    }
-
     return item;
 }
 
@@ -321,6 +317,13 @@ void GameController::rollbackToRegion(PieceItem* piece, int regionId, const QStr
     piece->markLastValid(regionId);
 }
 
+int GameController::battleDeclareCost(PieceItem* p, int distance) const
+{
+    int d = (distance <= 0 ? 1 : distance);
+    if (isLargeCorps(p)) return 2 * d;  // 大兵团 2N
+    return d;                            // 小兵团 N
+}
+
 void GameController::onPieceMovedRegionToRegion(PieceItem *piece, int fromRegionId, int toRegionId, Side side)
 {
     if (!piece) return;
@@ -332,16 +335,37 @@ void GameController::onPieceMovedRegionToRegion(PieceItem *piece, int fromRegion
     if (inBattleSeg()) {
         Side owner = m_owner.value(toRegionId, Side::Unknown);
         if (owner != Side::Unknown && owner != side) {
-            // 可选：限制必须相邻
-            QSet<int> blocked; // 陆战投入不需要 blocked
+            // 1) 距离 N（宣战不走“blocked”限制的话就给空集合）
+            QSet<int> blocked;
             int dist = m_graph.shortestDistance(fromRegionId, toRegionId, blocked);
-            if (dist != 1) {
-                rollbackToRegion(piece, fromRegionId, "陆战投入失败：只能投入相邻敌占区，已回滚。\n");
+            if (dist < 0) {
+                rollbackToRegion(piece, fromRegionId, "宣战失败：目标敌占区不可达，已回滚。\n");
                 return;
             }
 
+            // 2) 计算宣战成本
+            const int cost = battleDeclareCost(piece, dist);
+            const int apNow = currentAP(side);
+
+            if (apNow < cost) {
+                rollbackToRegion(piece, fromRegionId,
+                                 QString("宣战失败：距离=%1 需AP=%2 当前AP=%3，不足，已回滚。\n")
+                                 .arg(dist).arg(cost).arg(apNow));
+                return;
+            }
+
+            // 3) 扣 AP
+            addAP(side, -cost);
+            emit logLine(QString("宣战：%1 -> region %2 距离=%3 扣AP=%4（不发生实际移动）\n")
+                         .arg(fromRegionId).arg(toRegionId).arg(dist).arg(cost),
+                         Qt::black, true);
+
+            // 4) ✅ 不发生实际移动：回滚回原区
+            rollbackToRegion(piece, fromRegionId, QString());
+
+            // 5) 开战（战斗发生在 toRegionId）
             tryStartBattleFromMove(piece, fromRegionId, toRegionId);
-            return; // 不再走下面 Move 环节逻辑
+            return;
         }
 
         // 若不是敌占区：默认不允许随便挪（防误拖）

@@ -143,8 +143,6 @@ void MainWindow::initControllers()
 
         auto* dlg = new EventDialog(this);
 
-        connect(m_gameController, &GameController::eventPiecePlaced, dlg, &EventDialog::onEventPiecePlaced);
-
         connect(dlg, &QDialog::finished, this, [this, dlg](int){
             m_gameController->clearEventAllowedRegions();
             dlg->deleteLater();
@@ -179,6 +177,8 @@ void MainWindow::initControllers()
 
     connect(m_graphicsView, &GraphicsView::actionTokenDropped, m_gameController, &GameController::onActionTokenDropped);
 
+    connect(m_gameController, &GameController::stateChanged, this, &MainWindow::refreshStatusUI);
+
     connect(m_gameController, &GameController::logLine, this, &MainWindow::appendLog);
 
     connect(m_gameController, &GameController::requestEndSegEnabled, this, [this](bool en){
@@ -188,8 +188,6 @@ void MainWindow::initControllers()
     connect(m_gameController, &GameController::requestNavStep, this, [this](int step){
         if (m_navProgress) m_navProgress->setCurrentStep(step);
     });
-
-    connect(m_gameController, &GameController::stateChanged, this, &MainWindow::refreshStatusUI);
 }
 
 void MainWindow::initLogDock()

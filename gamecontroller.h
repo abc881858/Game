@@ -110,9 +110,6 @@ public slots:
     void onPieceMovedRegionToRegion(PieceItem* piece, int fromRegionId, int toRegionId, Side side);
 
 signals:
-    // 给 EventDialog 订阅：用于从列表里删掉事件棋子计数
-    void eventPiecePlaced(const QString& eventId, const QString& pixPath, int regionId);
-
     // ===== UI 控制用（或你也可以只用 actionPhaseChanged） =====
     void requestEndSegEnabled(bool enabled);  // 让 MainWindow 控制 actEndSeg
     void requestNavStep(int step1to5_or_0);   // 0表示不在行动阶段；1..5对应环节
@@ -180,6 +177,8 @@ private:
 
     enum class BattleStep { None, SetupUnits, SetupStrike, ShowField };
     BattleStep m_battleStep = BattleStep::None;
+
+    int battleDeclareCost(PieceItem *p, int distance) const;
 
 public slots:
     void onStrikePass();
