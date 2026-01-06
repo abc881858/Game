@@ -24,6 +24,7 @@ public:
     PieceKind kind() const { return m_kind; }
     Side side() const { return m_side; }
     int level() const { return m_level; }
+    QString pixPath() const { return m_pixPath; }
 
     int type() const override { return PieceType; }
 

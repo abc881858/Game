@@ -20,7 +20,7 @@ static inline bool isActionTokenPath(const QString& pixPath)
 GameController::GameController(QGraphicsScene* scene, QObject* parent)
     : QObject(parent)
     , m_scene(scene)
-    , m_placementManager(new PlacementManager)
+    , m_placementManager(new PlacementManager(this))
 {
     // ======= 城市格子矩形表 =======
     const auto regionRects = QList<QRectF>{
@@ -207,7 +207,7 @@ void GameController::onDropRequested(QPointF scenePos, QString pixPath, QString 
 {
     if (pixPath.isEmpty()) return;
 
-    // 1) 行动签判断（业务规则在 controller）
+    // 行动签
     if (pixPath.contains("_XDQ", Qt::CaseSensitive)) {
         if (m_scene && m_scene->sceneRect().contains(scenePos)) {
             onActionTokenDropped(pixPath);
@@ -217,18 +217,10 @@ void GameController::onDropRequested(QPointF scenePos, QString pixPath, QString 
         return;
     }
 
-    // 2) 命中 region
-    int regionId = -1;
-    const auto items = m_scene->items(scenePos, Qt::IntersectsItemShape, Qt::DescendingOrder);
-    for (auto* it : items) {
-        if (it->type() == RegionType) {
-            regionId = static_cast<RegionItem*>(it)->id();
-            break;
-        }
-    }
+    // 普通/事件：必须命中 region
+    const int regionId = hitRegionIdAt(scenePos);
     if (regionId < 0) return;
 
-    // 3) 走你现有入口（统一）
     onPieceDropped(pixPath, eventId, regionId, isEvent);
 }
 
@@ -877,37 +869,62 @@ void GameController::onPieceDropReleased(PieceItem* piece, const QPointF& sceneC
 {
     if (!piece || !m_scene || !m_placementManager) return;
 
-    // 1) 命中 region
-    int hitId = -1;
-    const auto items = m_scene->items(sceneCenter, Qt::IntersectsItemShape, Qt::DescendingOrder);
-    for (auto* it : items) {
-        if (it->type() == RegionType) {
-            hitId = static_cast<RegionItem*>(it)->id();
-            break;
-        }
-    }
-
-    // 2) 没命中：回滚到 lastValid
-    if (hitId < 0) {
-        const int last = piece->lastValidRegionId(); // 你需要给 PieceItem 暴露 getter
-        if (last >= 0) {
-            piece->setInLayout(true);
-            piece->setPos(piece->lastValidPos());
-            piece->setInLayout(false);
-            m_placementManager->relayoutRegion(last);
-        }
+    const int toId = hitRegionIdAt(sceneCenter);
+    if (toId < 0) {
+        rollbackToLastValid(piece);
         return;
     }
 
-    // 3) 移动 + 布局
-    const int oldId = piece->regionId();
-    m_placementManager->movePieceToRegion(piece, hitId);
-
-    // 4) 更新 lastValid
-    piece->markLastValid(hitId);
-
-    // 5) 通知“从哪到哪”
-    if (oldId >= 0 && oldId != hitId) {
-        onPieceMovedRegionToRegion(piece, oldId, hitId, piece->side());
+    const int fromId = piece->regionId();
+    if (fromId < 0 || fromId == toId) {
+        // 只是对齐/布局
+        snapPieceToRegion(piece, toId);
+        return;
     }
+
+    // 先“尝试吸附过去”（你当前架构是这样），再走规则，失败会 rollbackToRegion
+    snapPieceToRegion(piece, toId);
+
+    // 触发你的规则（里面可能 rollbackToRegion）
+    onPieceMovedRegionToRegion(piece, fromId, toId, piece->side());
+
+    // 如果规则允许，这里 lastValid 需要以规则结果为准：
+    // - 若 onPieceMovedRegionToRegion 内回滚到 fromId，会 markLastValid(fromId)
+    // - 若允许停在 toId，你已经 markLastValid(toId) 了
+}
+
+int GameController::hitRegionIdAt(const QPointF& scenePos) const
+{
+    if (!m_scene) return -1;
+
+    const auto items = m_scene->items(scenePos, Qt::IntersectsItemShape, Qt::DescendingOrder);
+    for (auto* it : items) {
+        if (it->type() == RegionType) {
+            return static_cast<RegionItem*>(it)->id();
+        }
+    }
+    return -1;
+}
+
+void GameController::rollbackToLastValid(PieceItem* piece)
+{
+    if (!piece || !m_placementManager) return;
+
+    const int last = piece->lastValidRegionId();
+    if (last < 0) return;
+
+    piece->setInLayout(true);
+    piece->setPos(piece->lastValidPos());
+    piece->setInLayout(false);
+
+    m_placementManager->relayoutRegion(last);
+}
+
+void GameController::snapPieceToRegion(PieceItem* piece, int regionId)
+{
+    if (!piece || !m_placementManager) return;
+    if (regionId < 0) return;
+
+    m_placementManager->movePieceToRegion(piece, regionId);
+    piece->markLastValid(regionId);
 }

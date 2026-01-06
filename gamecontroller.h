@@ -146,6 +146,10 @@ private:
 
     Side m_nextActionTokenSide = Side::Unknown;
 
+    int hitRegionIdAt(const QPointF& scenePos) const;
+    void rollbackToLastValid(PieceItem* piece);
+    void snapPieceToRegion(PieceItem* piece, int regionId); // 只负责“吸附+布局+lastValid”
+
 signals:
     void battleUnitsChanged(const QStringList& atkPix, const QStringList& defPix);
     void strikeGroupsChanged(const QList<StrikeGroupEntry>& atk,
