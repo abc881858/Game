@@ -18,50 +18,6 @@
 #include "pieceentrywidget.h"
 #include "battledialog.h"
 
-// ======= 小工具：城市格子矩形表 =======
-static QList<QRectF> buildRegionRects()
-{
-    return {
-        QRectF(972.46, 1166.95, 198.72, 209.29),  //挪威北部 0 D
-        QRectF(1310.70, 1169.06, 198.72, 211.40), //芬兰北部 1 D
-        QRectF(1593.98, 1179.63, 200.83, 211.40), //摩尔曼斯克 2 S
-        QRectF(1448.11, 1443.89, 198.72, 202.95), //卡累利阿 3 S
-        QRectF(1995.65, 1422.75, 202.95, 205.06), //阿尔汉格尔斯克 4 S
-        QRectF(2382.52, 1585.53, 205.06, 207.18), //基洛夫 5 S
-        QRectF(1308.59, 1722.94, 198.72, 202.95), //列宁格勒 6 S
-        QRectF(1581.30, 1687.00, 198.72, 205.06), //季赫温 7 S
-        QRectF(1851.90, 1714.48, 200.83, 205.06), //雅罗斯拉夫尔 8 S
-        QRectF(2097.12, 1866.69, 205.06, 200.83), //高尔基 9 S
-        QRectF(2367.72, 1862.47, 205.06, 198.72), //喀山 10 S
-        QRectF(1031.65, 1980.85, 200.83, 207.18), //波罗的海国家 11 S
-        QRectF(1369.90, 2016.79, 200.83, 207.18), //斯摩棱斯克 12 S
-        QRectF(1701.80, 1978.74, 196.61, 207.18), //莫斯科 13 S
-        QRectF(731.46, 2130.95, 200.83, 200.83),  //东普鲁士 14 D
-        QRectF(710.87, 2399.38, 201.59, 204.62),  //波兰北部 15 D
-        QRectF(1097.18, 2257.79, 196.61, 202.95), //白俄罗斯 16 S
-        QRectF(1498.85, 2270.47, 198.72, 202.95), //布良斯克 17 S
-        QRectF(1972.40, 2285.27, 202.95, 205.06), //沃洛涅日 18 S
-        QRectF(2352.92, 2390.97, 205.06, 205.06), //萨拉托夫 19 S
-        QRectF(1706.03, 2500.90, 198.72, 207.18), //哈尔科夫 20 S
-        QRectF(735.68, 2691.17, 200.83, 200.83),  //波兰南部 21 D
-        QRectF(1021.08, 2619.29, 200.83, 200.83), //利沃夫 22 S
-        QRectF(1302.25, 2564.33, 200.83, 202.95), //基辅 23 S
-        QRectF(2196.48, 2651.00, 209.29, 209.29), //斯大林格勒 24 S
-        QRectF(1593.98, 2765.16, 200.83, 202.95), //第聂伯罗彼得罗夫斯克 25 S
-        QRectF(1881.49, 2784.19, 202.95, 207.18), //斯大林诺 26 S
-        QRectF(2426.91, 2866.63, 205.06, 205.06), //阿斯特拉罕 27 S
-        QRectF(1342.41, 2898.34, 198.72, 205.06), //敖德萨 28 S
-        QRectF(703.97, 3023.07, 198.72, 202.95),  //南斯拉夫 29 D
-        QRectF(1107.75, 3063.24, 198.72, 207.18), //罗马尼亚 30 D
-        QRectF(1613.01, 3088.61, 200.83, 205.06), //克里米亚 31 S
-        QRectF(2251.45, 3090.72, 207.18, 207.18), //格罗兹尼 32 S
-        QRectF(1961.83, 3232.36, 205.06, 211.40), //巴统 33 S
-        QRectF(2401.54, 3409.94, 205.06, 205.06), //巴库 34 S
-    };
-}
-
-// =====================================================
-
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
@@ -78,10 +34,7 @@ MainWindow::MainWindow(QWidget *parent)
     initLogDock();
     initStatusDock();
     initActions();
-    initRegionItems();
     initPieceLists();
-    initGameBoardPieces();
-    m_gameController->refreshMovablePieces();
     refreshStatusUI();
 }
 
@@ -130,10 +83,7 @@ void MainWindow::initScene()
 
 void MainWindow::initControllers()
 {
-    m_placementManager = new PlacementManager(scene, this);
-    m_graphicsView->setPlacementManager(m_placementManager);
-
-    m_gameController = new GameController(scene, m_placementManager, this);
+    m_gameController = new GameController(scene, this);
 
     connect(ui->action_End, &QAction::triggered, m_gameController, &GameController::advanceSegment);
 
@@ -173,9 +123,10 @@ void MainWindow::initControllers()
         appendLog(QString("苏联掷骰子：%1\n").arg(num), QColor(183,100,50), true);
     });
 
-    connect(m_graphicsView, &GraphicsView::pieceDropped, m_gameController, &GameController::onPieceDropped);
+    // connect(m_graphicsView, &GraphicsView::pieceDropped, m_gameController, &GameController::onPieceDropped);
+    // connect(m_graphicsView, &GraphicsView::actionTokenDropped, m_gameController, &GameController::onActionTokenDropped);
 
-    connect(m_graphicsView, &GraphicsView::actionTokenDropped, m_gameController, &GameController::onActionTokenDropped);
+    connect(m_graphicsView, &GraphicsView::dropRequested, m_gameController, &GameController::onDropRequested);
 
     connect(m_gameController, &GameController::stateChanged, this, &MainWindow::refreshStatusUI);
 
@@ -278,17 +229,6 @@ void MainWindow::initActions()
     ui->toolBar->addAction(ui->action_End);
     ui->toolBar->addAction(ui->action_DTZ);
     ui->toolBar->addAction(ui->action_STZ);
-}
-
-void MainWindow::initRegionItems()
-{
-    const auto regionRects = buildRegionRects();
-
-    for (int i = 0; i < regionRects.size(); ++i) {
-        auto *regionItem = new RegionItem(i, regionRects[i]);
-        scene->addItem(regionItem);
-        m_placementManager->addRegionItem(regionItem);
-    }
 }
 
 PieceListWidget* MainWindow::createPieceList(QWidget* host)
@@ -422,34 +362,6 @@ void MainWindow::initPieceLists()
 
     fillList(pieceListWidget_D, Side::D, D, int(std::size(D)));
     fillList(pieceListWidget_S, Side::S, S, int(std::size(S)));
-}
-
-void MainWindow::initGameBoardPieces()
-{
-    auto spawn = [this](int rid, const QString& path, qreal z = 20.0){
-        if (!m_gameController) return;
-        m_gameController->placeNewPieceToRegion(rid, path, z);
-    };
-
-    spawn(1,  ":/D/D_2JBT.png"); // 挪威北部
-    spawn(2,  ":/S/S_2JBT.png"); // 摩尔曼斯克
-    spawn(6,  ":/S/S_F4.png");   // 列宁格勒
-    spawn(11, ":/D/D_4JBT.png"); // 波罗的海国家
-    spawn(11, ":/D/D_4JBT.png");
-    spawn(14, ":/D/D_4JBT.png"); // 东普鲁士
-    spawn(16, ":/D/D_4JBT.png"); // 白俄罗斯
-    spawn(16, ":/D/D_4JBT.png");
-    spawn(16, ":/D/D_2JBT.png");
-    spawn(21, ":/D/D_2JBT.png"); // 波兰南部
-    spawn(22, ":/D/D_4JBT.png"); // 利沃夫
-    spawn(22, ":/D/D_4JBT.png");
-    spawn(23, ":/S/S_4JBT.png"); // 基辅
-    spawn(28, ":/S/S_4JBT.png"); // 敖德萨
-    spawn(30, ":/L/L_4JBT.png"); // 罗马尼亚
-    spawn(30, ":/L/L_3JBT.png");
-    spawn(30, ":/D/D_4JBT.png");
-    spawn(31, ":/S/S_F4.png");   // 克里米亚
-    spawn(34, ":/S/S_3JBT.png"); // 巴库
 }
 
 void MainWindow::refreshStatusUI()

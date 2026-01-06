@@ -5,8 +5,9 @@
 #include <QString>
 #include "mapgraph.h"
 #include "util.h"
-#include "pieceitem.h"
 #include "battlecontext.h"
+#include "pieceitem.h"
+#include "regionitem.h"
 
 class QGraphicsScene;
 class PlacementManager;
@@ -73,7 +74,7 @@ public:
         int segIndex = 0; // 0..4
     };
 
-    explicit GameController(QGraphicsScene* scene, PlacementManager* placementManager, QObject* parent=nullptr);
+    explicit GameController(QGraphicsScene* scene, QObject* parent=nullptr);
 
     const ActionPhaseState& actionPhase() const { return m_phase; }
 
@@ -95,19 +96,15 @@ public:
 
     bool canDragUnitInBattleSeg(Side side) const;
 
-public slots:
-    void refreshMovablePieces();
-
-    // 由 GraphicsView 在 dropEvent 中转发过来
     void onPieceDropped(const QString& pixPath, const QString& eventId, int regionId, bool isEvent);
-
-    // 由 GraphicsView 在 dropEvent 中转发过来（行动签）
     void onActionTokenDropped(const QString& pixPath);
 
-    // 由 PieceItem 的右键菜单触发（拆分）
-    void onSplitRequested(PieceItem* piece, int a, int b);
-
     void onPieceMovedRegionToRegion(PieceItem* piece, int fromRegionId, int toRegionId, Side side);
+
+public slots:
+    void onDropRequested(QPointF scenePos, QString pixPath, QString eventId, bool isEvent);
+    void refreshMovablePieces();
+    void onSplitRequested(PieceItem* piece, int a, int b);
 
 signals:
     // ===== UI 控制用（或你也可以只用 actionPhaseChanged） =====
@@ -124,7 +121,7 @@ private:
     void rollbackToRegion(PieceItem* piece, int regionId, const QString& reason = QString());
 
     QGraphicsScene* m_scene = nullptr;
-    PlacementManager*    m_placementManager = nullptr;
+    PlacementManager* m_placementManager = nullptr;
 
     QSet<int> m_eventAllowedRegions;
 
@@ -182,4 +179,5 @@ private:
 
 public slots:
     void onStrikePass();
+    void onPieceDropReleased(PieceItem *piece, const QPointF &sceneCenter);
 };

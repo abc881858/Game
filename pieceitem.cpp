@@ -5,7 +5,6 @@
 #include <QtMath>
 #include <QMenu>
 #include "regionitem.h"
-#include "placementmanager.h"
 
 static QList<QPair<int,int>> splitOptions(int level)
 {
@@ -29,34 +28,10 @@ PieceItem::PieceItem(const QPixmap& pm) : QGraphicsPixmapItem(pm)
 void PieceItem::mouseReleaseEvent(QGraphicsSceneMouseEvent* e)
 {
     QGraphicsPixmapItem::mouseReleaseEvent(e);
-    if (!m_inLayout) snapToNearestRegion();
-}
-
-void PieceItem::snapToNearestRegion() {
-    if (!scene() || !m_placementManager) return;
+    if (m_inLayout) return;
 
     const QPointF center = mapToScene(boundingRect().center());
-    const int hitId = m_placementManager->hitTestRegionId(center);
-
-    if (hitId < 0) {
-        if (m_lastValidRegionId >= 0) {
-            setInLayout(true);
-            setPos(m_lastValidPos);
-            setInLayout(false);
-            m_placementManager->relayoutRegion(m_lastValidRegionId);
-        }
-        return;
-    }
-
-    const int oldId = m_regionId;
-    m_placementManager->movePieceToRegion(this, hitId);
-
-    m_lastValidRegionId = hitId;
-    m_lastValidPos = pos();
-
-    if (oldId >= 0 && oldId != hitId) {
-        emit movedRegionToRegion(this, oldId, hitId, m_side);
-    }
+    emit dropReleased(this, center);
 }
 
 void PieceItem::contextMenuEvent(QGraphicsSceneContextMenuEvent* e)

@@ -1,12 +1,11 @@
 #include "placementmanager.h"
-#include <QGraphicsScene>
 #include <QtMath>
 #include <algorithm>
 #include "regionitem.h"
 #include "pieceitem.h"
 
-PlacementManager::PlacementManager(QGraphicsScene* scene, QObject* parent)
-    : QObject(parent), m_scene(scene)
+PlacementManager::PlacementManager(QObject* parent)
+    : QObject(parent)
 {
 }
 
@@ -18,17 +17,6 @@ void PlacementManager::addRegionItem(RegionItem* region)
 RegionItem* PlacementManager::region(int regionId) const
 {
     return m_regions.value(regionId, nullptr);
-}
-
-int PlacementManager::hitTestRegionId(const QPointF& scenePos) const
-{
-    const auto items = m_scene->items(scenePos, Qt::IntersectsItemShape, Qt::DescendingOrder);
-    for (auto* it : items) {
-        if (it->type() == RegionType) {
-            return static_cast<RegionItem*>(it)->id();
-        }
-    }
-    return -1;
 }
 
 void PlacementManager::removePieceItem(PieceItem* piece)

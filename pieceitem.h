@@ -7,7 +7,6 @@
 inline constexpr int PieceType = QGraphicsItem::UserType + 200;
 
 class RegionItem;
-class PlacementManager;
 
 class PieceItem : public QObject, public QGraphicsPixmapItem
 {
@@ -31,10 +30,7 @@ public:
 
     int regionId() const { return m_regionId; }
     void setRegionId(int id) { m_regionId = id; }
-    void snapToNearestRegion();
 
-    void setPlacementManager(PlacementManager* placementManager) { m_placementManager = placementManager; }
-    PlacementManager* placementManager() const { return m_placementManager; }
     void markLastValid(int regionId) { m_lastValidRegionId = regionId; m_lastValidPos = pos(); }
 
     void setInLayout(bool v) { m_inLayout = v; }
@@ -63,16 +59,14 @@ private:
     RegionItem* m_regionItem = nullptr; // 当前所在格（没有则 nullptr）
     Side m_side = Side::Unknown;    // 你 setUnitMeta 时保存的阵营
 
-    PlacementManager* m_placementManager = nullptr;
-
-signals:
-    void movedRegionToRegion(PieceItem* piece, int fromRegionId, int toRegionId, Side side);
-    void splitRequested(PieceItem* piece, int a, int b);
-
 public:
     bool movedThisActionPhase() const { return m_movedThisActionPhase; }
     void setMovedThisActionPhase(bool v) { m_movedThisActionPhase = v; }
 
 private:
     bool m_movedThisActionPhase = false;
+
+signals:
+    void splitRequested(PieceItem* piece, int a, int b);
+    void dropReleased(PieceItem* self, const QPointF& sceneCenter);
 };

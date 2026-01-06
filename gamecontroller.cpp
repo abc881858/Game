@@ -17,11 +17,77 @@ static inline bool isActionTokenPath(const QString& pixPath)
     return pixPath.contains("_XDQ", Qt::CaseSensitive);
 }
 
-GameController::GameController(QGraphicsScene* scene, PlacementManager* placementManager, QObject* parent)
+GameController::GameController(QGraphicsScene* scene, QObject* parent)
     : QObject(parent)
     , m_scene(scene)
-    , m_placementManager(placementManager)
+    , m_placementManager(new PlacementManager)
 {
+    // ======= 城市格子矩形表 =======
+    const auto regionRects = QList<QRectF>{
+        QRectF(972.46, 1166.95, 198.72, 209.29),  //挪威北部 0 D
+        QRectF(1310.70, 1169.06, 198.72, 211.40), //芬兰北部 1 D
+        QRectF(1593.98, 1179.63, 200.83, 211.40), //摩尔曼斯克 2 S
+        QRectF(1448.11, 1443.89, 198.72, 202.95), //卡累利阿 3 S
+        QRectF(1995.65, 1422.75, 202.95, 205.06), //阿尔汉格尔斯克 4 S
+        QRectF(2382.52, 1585.53, 205.06, 207.18), //基洛夫 5 S
+        QRectF(1308.59, 1722.94, 198.72, 202.95), //列宁格勒 6 S
+        QRectF(1581.30, 1687.00, 198.72, 205.06), //季赫温 7 S
+        QRectF(1851.90, 1714.48, 200.83, 205.06), //雅罗斯拉夫尔 8 S
+        QRectF(2097.12, 1866.69, 205.06, 200.83), //高尔基 9 S
+        QRectF(2367.72, 1862.47, 205.06, 198.72), //喀山 10 S
+        QRectF(1031.65, 1980.85, 200.83, 207.18), //波罗的海国家 11 S
+        QRectF(1369.90, 2016.79, 200.83, 207.18), //斯摩棱斯克 12 S
+        QRectF(1701.80, 1978.74, 196.61, 207.18), //莫斯科 13 S
+        QRectF(731.46, 2130.95, 200.83, 200.83),  //东普鲁士 14 D
+        QRectF(710.87, 2399.38, 201.59, 204.62),  //波兰北部 15 D
+        QRectF(1097.18, 2257.79, 196.61, 202.95), //白俄罗斯 16 S
+        QRectF(1498.85, 2270.47, 198.72, 202.95), //布良斯克 17 S
+        QRectF(1972.40, 2285.27, 202.95, 205.06), //沃洛涅日 18 S
+        QRectF(2352.92, 2390.97, 205.06, 205.06), //萨拉托夫 19 S
+        QRectF(1706.03, 2500.90, 198.72, 207.18), //哈尔科夫 20 S
+        QRectF(735.68, 2691.17, 200.83, 200.83),  //波兰南部 21 D
+        QRectF(1021.08, 2619.29, 200.83, 200.83), //利沃夫 22 S
+        QRectF(1302.25, 2564.33, 200.83, 202.95), //基辅 23 S
+        QRectF(2196.48, 2651.00, 209.29, 209.29), //斯大林格勒 24 S
+        QRectF(1593.98, 2765.16, 200.83, 202.95), //第聂伯罗彼得罗夫斯克 25 S
+        QRectF(1881.49, 2784.19, 202.95, 207.18), //斯大林诺 26 S
+        QRectF(2426.91, 2866.63, 205.06, 205.06), //阿斯特拉罕 27 S
+        QRectF(1342.41, 2898.34, 198.72, 205.06), //敖德萨 28 S
+        QRectF(703.97, 3023.07, 198.72, 202.95),  //南斯拉夫 29 D
+        QRectF(1107.75, 3063.24, 198.72, 207.18), //罗马尼亚 30 D
+        QRectF(1613.01, 3088.61, 200.83, 205.06), //克里米亚 31 S
+        QRectF(2251.45, 3090.72, 207.18, 207.18), //格罗兹尼 32 S
+        QRectF(1961.83, 3232.36, 205.06, 211.40), //巴统 33 S
+        QRectF(2401.54, 3409.94, 205.06, 205.06), //巴库 34 S
+    };
+
+    for (int i = 0; i < regionRects.size(); ++i) {
+        auto *regionItem = new RegionItem(i, regionRects[i]);
+        m_scene->addItem(regionItem);
+        m_placementManager->addRegionItem(regionItem);
+    }
+
+    placeNewPieceToRegion(1,  ":/D/D_2JBT.png", 20.0); // 挪威北部
+    placeNewPieceToRegion(2,  ":/S/S_2JBT.png", 20.0); // 摩尔曼斯克
+    placeNewPieceToRegion(6,  ":/S/S_F4.png", 20.0);   // 列宁格勒
+    placeNewPieceToRegion(11, ":/D/D_4JBT.png", 20.0); // 波罗的海国家
+    placeNewPieceToRegion(11, ":/D/D_4JBT.png", 20.0);
+    placeNewPieceToRegion(14, ":/D/D_4JBT.png", 20.0); // 东普鲁士
+    placeNewPieceToRegion(16, ":/D/D_4JBT.png", 20.0); // 白俄罗斯
+    placeNewPieceToRegion(16, ":/D/D_4JBT.png", 20.0);
+    placeNewPieceToRegion(16, ":/D/D_2JBT.png", 20.0);
+    placeNewPieceToRegion(21, ":/D/D_2JBT.png", 20.0); // 波兰南部
+    placeNewPieceToRegion(22, ":/D/D_4JBT.png", 20.0); // 利沃夫
+    placeNewPieceToRegion(22, ":/D/D_4JBT.png", 20.0);
+    placeNewPieceToRegion(23, ":/S/S_4JBT.png", 20.0); // 基辅
+    placeNewPieceToRegion(28, ":/S/S_4JBT.png", 20.0); // 敖德萨
+    placeNewPieceToRegion(30, ":/L/L_4JBT.png", 20.0); // 罗马尼亚
+    placeNewPieceToRegion(30, ":/L/L_3JBT.png", 20.0);
+    placeNewPieceToRegion(30, ":/D/D_4JBT.png", 20.0);
+    placeNewPieceToRegion(31, ":/S/S_F4.png", 20.0);   // 克里米亚
+    placeNewPieceToRegion(34, ":/S/S_3JBT.png", 20.0); // 巴库
+
+    refreshMovablePieces();
 }
 
 PieceItem* GameController::createPieceFromPixPath(const QString& pixPath)
@@ -30,8 +96,7 @@ PieceItem* GameController::createPieceFromPixPath(const QString& pixPath)
     if (pm.isNull()) return nullptr;
 
     auto* item = new PieceItem(pm);
-
-    connect(item, &PieceItem::movedRegionToRegion, this, &GameController::onPieceMovedRegionToRegion);
+    connect(item, &PieceItem::dropReleased, this, &GameController::onPieceDropReleased);
 
     // meta
     Side side;
@@ -42,19 +107,13 @@ PieceItem* GameController::createPieceFromPixPath(const QString& pixPath)
         item->setUnitMeta(PieceKind::Other, Side::Unknown, 0, pixPath);
     }
 
-    // 让 PieceItem 拥有 placementManager/回滚
-    item->setPlacementManager(m_placementManager);
-
     // 让 controller 接住拆分请求（右键菜单）
     connect(item, &PieceItem::splitRequested, this, &GameController::onSplitRequested);
 
     return item;
 }
 
-void GameController::onPieceDropped(const QString& pixPath,
-                                   const QString& eventId,
-                                   int regionId,
-                                   bool isEvent)
+void GameController::onPieceDropped(const QString& pixPath, const QString& eventId, int regionId, bool isEvent)
 {
     if (isActionTokenPath(pixPath)) return;
 
@@ -142,6 +201,35 @@ void GameController::onActionTokenDropped(const QString& pixPath)
 
     // ✅ 打完这张签后，下一张签轮到对方（等本行动阶段结束后再打）
     m_nextActionTokenSide = (side==Side::D ? Side::S : Side::D);
+}
+
+void GameController::onDropRequested(QPointF scenePos, QString pixPath, QString eventId, bool isEvent)
+{
+    if (pixPath.isEmpty()) return;
+
+    // 1) 行动签判断（业务规则在 controller）
+    if (pixPath.contains("_XDQ", Qt::CaseSensitive)) {
+        if (m_scene && m_scene->sceneRect().contains(scenePos)) {
+            onActionTokenDropped(pixPath);
+        } else {
+            emit logLine("行动签必须丢在地图范围内。\n", Qt::black, true);
+        }
+        return;
+    }
+
+    // 2) 命中 region
+    int regionId = -1;
+    const auto items = m_scene->items(scenePos, Qt::IntersectsItemShape, Qt::DescendingOrder);
+    for (auto* it : items) {
+        if (it->type() == RegionType) {
+            regionId = static_cast<RegionItem*>(it)->id();
+            break;
+        }
+    }
+    if (regionId < 0) return;
+
+    // 3) 走你现有入口（统一）
+    onPieceDropped(pixPath, eventId, regionId, isEvent);
 }
 
 void GameController::onSplitRequested(PieceItem* piece, int a, int b)
@@ -783,4 +871,43 @@ bool GameController::canDragUnitInBattleSeg(Side side) const
     if (!inBattleSeg()) return false;
     if (side != phaseSide()) return false; // 只允许当前行动方
     return true;
+}
+
+void GameController::onPieceDropReleased(PieceItem* piece, const QPointF& sceneCenter)
+{
+    if (!piece || !m_scene || !m_placementManager) return;
+
+    // 1) 命中 region
+    int hitId = -1;
+    const auto items = m_scene->items(sceneCenter, Qt::IntersectsItemShape, Qt::DescendingOrder);
+    for (auto* it : items) {
+        if (it->type() == RegionType) {
+            hitId = static_cast<RegionItem*>(it)->id();
+            break;
+        }
+    }
+
+    // 2) 没命中：回滚到 lastValid
+    if (hitId < 0) {
+        const int last = piece->lastValidRegionId(); // 你需要给 PieceItem 暴露 getter
+        if (last >= 0) {
+            piece->setInLayout(true);
+            piece->setPos(piece->lastValidPos());
+            piece->setInLayout(false);
+            m_placementManager->relayoutRegion(last);
+        }
+        return;
+    }
+
+    // 3) 移动 + 布局
+    const int oldId = piece->regionId();
+    m_placementManager->movePieceToRegion(piece, hitId);
+
+    // 4) 更新 lastValid
+    piece->markLastValid(hitId);
+
+    // 5) 通知“从哪到哪”
+    if (oldId >= 0 && oldId != hitId) {
+        onPieceMovedRegionToRegion(piece, oldId, hitId, piece->side());
+    }
 }

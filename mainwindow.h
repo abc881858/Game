@@ -6,7 +6,6 @@
 #include "DockManager.h"
 #include "piecelistwidget.h"
 #include "util.h"
-#include "placementmanager.h"
 #include "gamecontroller.h"
 #include "navprogress.h"
 
@@ -39,9 +38,7 @@ private:
     void initLogDock();
     void initStatusDock();
     void initActions();
-    void initRegionItems();
     void initPieceLists();
-    void initGameBoardPieces();
 
     PieceListWidget* createPieceList(QWidget* host);
 
@@ -62,7 +59,6 @@ private:
     PieceListWidget *pieceListWidget_S = nullptr;
 
     // Controller
-    PlacementManager* m_placementManager = nullptr;
     GameController* m_gameController = nullptr;
 
     // Log
