@@ -1,12 +1,12 @@
-﻿#include "navprogress.h"
+﻿#include "segmentwidget.h"
 #include "qfontdatabase.h"
 #include "qpainter.h"
 #include <QPainterPath>
 
-NavProgress::NavProgress(QWidget *parent) : QWidget(parent)
+SegmentWidget::SegmentWidget(QWidget *parent) : QWidget(parent)
 {
-    maxStep = 5;
-    currentStep = 1;
+    maxSegment = 5;
+    currentSegment = 1;
 
     topInfo << "step1" << "step2" << "step3" << "step4" << "step5";
     bottomInfo << "2016-11-24 20:57:58" << "2016-11-24 21:55:56";
@@ -18,9 +18,10 @@ NavProgress::NavProgress(QWidget *parent) : QWidget(parent)
     currentForeground = QColor(255, 255, 255);
 
     setFont(QFont("Microsoft Yahei", 10));
+    setCurrentBackground(QColor(24,189,155));
 }
 
-void NavProgress::paintEvent(QPaintEvent *)
+void SegmentWidget::paintEvent(QPaintEvent *)
 {
     //绘制准备工作,启用反锯齿
     QPainter painter(this);
@@ -53,12 +54,12 @@ void NavProgress::paintEvent(QPaintEvent *)
     }
 }
 
-void NavProgress::drawBg_JD(QPainter *painter)
+void SegmentWidget::drawBg_JD(QPainter *painter)
 {
     painter->save();
 
     //圆半径为高度一定比例,计算宽度,将宽度等分
-    int width = this->width() / maxStep;
+    int width = this->width() / maxSegment;
     int height = this->height() / 2;
     int radius = height / 2;
     int initX = 0;
@@ -74,7 +75,7 @@ void NavProgress::drawBg_JD(QPainter *painter)
     painter->setPen(pen);
     painter->setBrush(Qt::NoBrush);
 
-    for (int i = 0; i < maxStep - 1; i++) {
+    for (int i = 0; i < maxSegment - 1; i++) {
         painter->drawLine(QPoint(initX, initY), QPoint(initX + width, initY));
         initX += width;
     }
@@ -84,7 +85,7 @@ void NavProgress::drawBg_JD(QPainter *painter)
     painter->setPen(Qt::NoPen);
     painter->setBrush(background);
 
-    for (int i = 0; i < maxStep; i++) {
+    for (int i = 0; i < maxSegment; i++) {
         painter->drawEllipse(QPoint(initX, initY), radius, radius);
         initX += width;
     }
@@ -97,7 +98,7 @@ void NavProgress::drawBg_JD(QPainter *painter)
     painter->setPen(foreground);
     painter->setBrush(Qt::NoBrush);
 
-    for (int i = 0; i < maxStep; i++) {
+    for (int i = 0; i < maxSegment; i++) {
         QRect textRect(initX - radius, initY - radius, radius * 2, radius * 2);
         painter->drawText(textRect, Qt::AlignCenter, QString::number(i + 1));
         initX += width;
@@ -106,9 +107,9 @@ void NavProgress::drawBg_JD(QPainter *painter)
     painter->restore();
 }
 
-void NavProgress::drawText_JD(QPainter *painter)
+void SegmentWidget::drawText_JD(QPainter *painter)
 {
-    int width = this->width() / maxStep;
+    int width = this->width() / maxSegment;
     int height = this->height() / 2;
     int initX = 0;
     int initY = height;
@@ -120,7 +121,7 @@ void NavProgress::drawText_JD(QPainter *painter)
     painter->setPen(background);
     painter->setBrush(Qt::NoBrush);
 
-    for (int i = 0; i < maxStep; i++) {
+    for (int i = 0; i < maxSegment; i++) {
         QRect textRect(initX, initY, width, height);
         painter->drawText(textRect, Qt::AlignCenter, topInfo.at(i));
         initX += width;
@@ -129,16 +130,16 @@ void NavProgress::drawText_JD(QPainter *painter)
     painter->restore();
 }
 
-void NavProgress::drawCurrentBg_JD(QPainter *painter)
+void SegmentWidget::drawCurrentBg_JD(QPainter *painter)
 {
-    if (currentStep <= 0) {
+    if (currentSegment <= 0) {
         return;
     }
 
     painter->save();
 
     //圆半径为高度一定比例,计算宽度,将宽度等分
-    int width = this->width() / maxStep;
+    int width = this->width() / maxSegment;
     int height = this->height() / 2;
     int radius = height / 2;
     int initX = 0;
@@ -155,13 +156,13 @@ void NavProgress::drawCurrentBg_JD(QPainter *painter)
     painter->setPen(pen);
     painter->setBrush(Qt::NoBrush);
 
-    for (int i = 0; i < currentStep - 1; i++) {
+    for (int i = 0; i < currentSegment - 1; i++) {
         painter->drawLine(QPoint(initX, initY), QPoint(initX + width, initY));
         initX += width;
     }
 
     //如果当前进度超过一个步数且小于最大步数则增加半个线条
-    if (currentStep > 0 && currentStep < maxStep) {
+    if (currentSegment > 0 && currentSegment < maxSegment) {
         painter->drawLine(QPoint(initX, initY), QPoint(initX + width / 2, initY));
     }
 
@@ -170,7 +171,7 @@ void NavProgress::drawCurrentBg_JD(QPainter *painter)
     painter->setPen(Qt::NoPen);
     painter->setBrush(currentBackground);
 
-    for (int i = 0; i < currentStep; i++) {
+    for (int i = 0; i < currentSegment; i++) {
         painter->drawEllipse(QPoint(initX, initY), radius, radius);
         initX += width;
     }
@@ -183,7 +184,7 @@ void NavProgress::drawCurrentBg_JD(QPainter *painter)
     painter->setPen(currentForeground);
     painter->setBrush(Qt::NoBrush);
 
-    for (int i = 0; i < currentStep; i++) {
+    for (int i = 0; i < currentSegment; i++) {
         QRect textRect(initX - radius, initY - radius, radius * 2, radius * 2);
         painter->drawText(textRect, Qt::AlignCenter, QString::number(i + 1));
         initX += width;
@@ -192,13 +193,13 @@ void NavProgress::drawCurrentBg_JD(QPainter *painter)
     painter->restore();
 }
 
-void NavProgress::drawCurrentText_JD(QPainter *painter)
+void SegmentWidget::drawCurrentText_JD(QPainter *painter)
 {
-    if (currentStep <= 0) {
+    if (currentSegment <= 0) {
         return;
     }
 
-    int width = this->width() / maxStep;
+    int width = this->width() / maxSegment;
     int height = this->height() / 2;
     int initX = 0;
     int initY = height;
@@ -210,7 +211,7 @@ void NavProgress::drawCurrentText_JD(QPainter *painter)
     painter->setPen(currentBackground);
     painter->setBrush(Qt::NoBrush);
 
-    for (int i = 0; i < currentStep; i++) {
+    for (int i = 0; i < currentSegment; i++) {
         QRect textRect(initX, initY, width, height);
         painter->drawText(textRect, Qt::AlignCenter, topInfo.at(i));
         initX += width;
@@ -219,12 +220,12 @@ void NavProgress::drawCurrentText_JD(QPainter *painter)
     painter->restore();
 }
 
-void NavProgress::drawBg_TB(QPainter *painter)
+void SegmentWidget::drawBg_TB(QPainter *painter)
 {
     painter->save();
 
     //圆半径为高度一定比例,计算宽度,将宽度等分
-    int width = this->width() / maxStep;
+    int width = this->width() / maxSegment;
     int height = this->height() / 3;
     int radius = height / 2;
     int initX = 0;
@@ -240,7 +241,7 @@ void NavProgress::drawBg_TB(QPainter *painter)
     painter->setPen(pen);
     painter->setBrush(Qt::NoBrush);
 
-    for (int i = 0; i < maxStep - 1; i++) {
+    for (int i = 0; i < maxSegment - 1; i++) {
         painter->drawLine(QPoint(initX, initY), QPoint(initX + width, initY));
         initX += width;
     }
@@ -250,7 +251,7 @@ void NavProgress::drawBg_TB(QPainter *painter)
     painter->setPen(Qt::NoPen);
     painter->setBrush(background);
 
-    for (int i = 0; i < maxStep; i++) {
+    for (int i = 0; i < maxSegment; i++) {
         painter->drawEllipse(QPoint(initX, initY), radius, radius);
         initX += width;
     }
@@ -263,7 +264,7 @@ void NavProgress::drawBg_TB(QPainter *painter)
     painter->setPen(foreground);
     painter->setBrush(Qt::NoBrush);
 
-    for (int i = 0; i < maxStep; i++) {
+    for (int i = 0; i < maxSegment; i++) {
         QRect textRect(initX - radius, initY - radius, radius * 2, radius * 2);
         painter->drawText(textRect, Qt::AlignCenter, QString::number(i + 1));
         initX += width;
@@ -272,9 +273,9 @@ void NavProgress::drawBg_TB(QPainter *painter)
     painter->restore();
 }
 
-void NavProgress::drawText_TB(QPainter *painter)
+void SegmentWidget::drawText_TB(QPainter *painter)
 {
-    int width = this->width() / maxStep;
+    int width = this->width() / maxSegment;
     int height = this->height() / 3;
     int initX = 0;
     int initY = 0;
@@ -287,7 +288,7 @@ void NavProgress::drawText_TB(QPainter *painter)
     painter->setBrush(Qt::NoBrush);
 
     //绘制上部分文字
-    for (int i = 0; i < maxStep; i++) {
+    for (int i = 0; i < maxSegment; i++) {
         QRect textRect(initX, initY, width, height);
         painter->drawText(textRect, Qt::AlignCenter, topInfo.at(i));
         initX += width;
@@ -297,7 +298,7 @@ void NavProgress::drawText_TB(QPainter *painter)
     initX = 0;
     initY = this->height() / 3 * 2;
 
-    for (int i = 0; i < currentStep; i++) {
+    for (int i = 0; i < currentSegment; i++) {
         QRect textRect(initX, initY, width, height);
         painter->drawText(textRect, Qt::AlignCenter, bottomInfo.at(i));
         initX += width;
@@ -306,16 +307,16 @@ void NavProgress::drawText_TB(QPainter *painter)
     painter->restore();
 }
 
-void NavProgress::drawCurrentBg_TB(QPainter *painter)
+void SegmentWidget::drawCurrentBg_TB(QPainter *painter)
 {
-    if (currentStep <= 0) {
+    if (currentSegment <= 0) {
         return;
     }
 
     painter->save();
 
     //圆半径为高度一定比例,计算宽度,将宽度等分
-    int width = this->width() / maxStep;
+    int width = this->width() / maxSegment;
     int height = this->height() / 3;
     int radius = height / 2;
     int initX = 0;
@@ -332,13 +333,13 @@ void NavProgress::drawCurrentBg_TB(QPainter *painter)
     painter->setPen(pen);
     painter->setBrush(Qt::NoBrush);
 
-    for (int i = 0; i < currentStep - 1; i++) {
+    for (int i = 0; i < currentSegment - 1; i++) {
         painter->drawLine(QPoint(initX, initY), QPoint(initX + width, initY));
         initX += width;
     }
 
     //如果当前进度超过一个步数且小于最大步数则增加半个线条
-    if (currentStep > 0 && currentStep < maxStep) {
+    if (currentSegment > 0 && currentSegment < maxSegment) {
         painter->drawLine(QPoint(initX, initY), QPoint(initX + width / 2, initY));
     }
 
@@ -347,7 +348,7 @@ void NavProgress::drawCurrentBg_TB(QPainter *painter)
     painter->setPen(Qt::NoPen);
     painter->setBrush(currentBackground);
 
-    for (int i = 0; i < currentStep; i++) {
+    for (int i = 0; i < currentSegment; i++) {
         painter->drawEllipse(QPoint(initX, initY), radius, radius);
         initX += width;
     }
@@ -362,7 +363,7 @@ void NavProgress::drawCurrentBg_TB(QPainter *painter)
     //完成字符,可以查看表格更换图形字符
     QString finshStr = QChar(0xf00c);
 
-    for (int i = 0; i < currentStep; i++) {
+    for (int i = 0; i < currentSegment; i++) {
         QRect textRect(initX - radius, initY - radius, radius * 2, radius * 2);
         painter->drawText(textRect, Qt::AlignCenter, finshStr);
         initX += width;
@@ -371,16 +372,16 @@ void NavProgress::drawCurrentBg_TB(QPainter *painter)
     painter->restore();
 }
 
-void NavProgress::drawBg_ZFB(QPainter *painter)
+void SegmentWidget::drawBg_ZFB(QPainter *painter)
 {
-    if (currentStep <= 0) {
+    if (currentSegment <= 0) {
         return;
     }
 
     painter->save();
 
     //圆半径为高度一定比例,计算宽度,将宽度等分
-    int width = this->width() / maxStep;
+    int width = this->width() / maxSegment;
     int height = this->height() / 3;
     int radius = height / 3;
     int initX = 0;
@@ -396,7 +397,7 @@ void NavProgress::drawBg_ZFB(QPainter *painter)
     painter->setPen(pen);
     painter->setBrush(Qt::NoBrush);
 
-    for (int i = 0; i < maxStep - 1; i++) {
+    for (int i = 0; i < maxSegment - 1; i++) {
         painter->drawLine(QPoint(initX, initY), QPoint(initX + width, initY));
         initX += width;
     }
@@ -406,7 +407,7 @@ void NavProgress::drawBg_ZFB(QPainter *painter)
     painter->setPen(Qt::NoPen);
     painter->setBrush(background);
 
-    for (int i = 0; i < maxStep; i++) {
+    for (int i = 0; i < maxSegment; i++) {
         painter->drawEllipse(QPoint(initX, initY), radius, radius);
         initX += width;
     }
@@ -414,9 +415,9 @@ void NavProgress::drawBg_ZFB(QPainter *painter)
     painter->restore();
 }
 
-void NavProgress::drawText_ZFB(QPainter *painter)
+void SegmentWidget::drawText_ZFB(QPainter *painter)
 {
-    int width = this->width() / maxStep;
+    int width = this->width() / maxSegment;
     int height = this->height() / 3;
     int initX = 0;
     int initY = 0;
@@ -429,7 +430,7 @@ void NavProgress::drawText_ZFB(QPainter *painter)
     painter->setBrush(Qt::NoBrush);
 
     //绘制上部分文字
-    for (int i = 0; i < maxStep; i++) {
+    for (int i = 0; i < maxSegment; i++) {
         QRect textRect(initX, initY, width, height);
         painter->drawText(textRect, Qt::AlignCenter, topInfo.at(i));
         initX += width;
@@ -439,12 +440,12 @@ void NavProgress::drawText_ZFB(QPainter *painter)
     initX = 0;
     initY = this->height() / 3 * 2;
 
-    for (int i = 0; i < maxStep; i++) {
+    for (int i = 0; i < maxSegment; i++) {
         QRect textRect(initX, initY, width, height);
 
         if (i == 0) {
             painter->drawText(textRect, Qt::AlignCenter, bottomInfo.first());
-        } else if (i == maxStep - 1) {
+        } else if (i == maxSegment - 1) {
             painter->drawText(textRect, Qt::AlignCenter, bottomInfo.last());
         }
 
@@ -454,16 +455,16 @@ void NavProgress::drawText_ZFB(QPainter *painter)
     painter->restore();
 }
 
-void NavProgress::drawCurrentBg_ZFB(QPainter *painter)
+void SegmentWidget::drawCurrentBg_ZFB(QPainter *painter)
 {
-    if (currentStep <= 0) {
+    if (currentSegment <= 0) {
         return;
     }
 
     painter->save();
 
     //圆半径为高度一定比例,计算宽度,将宽度等分
-    int width = this->width() / maxStep;
+    int width = this->width() / maxSegment;
     int height = this->height() / 3;
     int radius = height / 3;
     int initX = 0;
@@ -474,7 +475,7 @@ void NavProgress::drawCurrentBg_ZFB(QPainter *painter)
     painter->setPen(Qt::NoPen);
     painter->setBrush(currentBackground);
 
-    for (int i = 0; i < currentStep - 1; i++) {
+    for (int i = 0; i < currentSegment - 1; i++) {
         initX += width;
     }
 
@@ -496,7 +497,7 @@ void NavProgress::drawCurrentBg_ZFB(QPainter *painter)
     font.setBold(true);
     painter->setFont(font);
     painter->setPen(currentForeground);
-    painter->drawText(bgRect, Qt::AlignCenter, topInfo.at(currentStep - 1));
+    painter->drawText(bgRect, Qt::AlignCenter, topInfo.at(currentSegment - 1));
 
     //绘制倒三角
     int centerX = initX + width / 4;
@@ -512,62 +513,62 @@ void NavProgress::drawCurrentBg_ZFB(QPainter *painter)
     painter->restore();
 }
 
-QStringList NavProgress::getTopInfo() const
+QStringList SegmentWidget::getTopInfo() const
 {
     return this->topInfo;
 }
 
-QStringList NavProgress::getBottomInfo() const
+QStringList SegmentWidget::getBottomInfo() const
 {
     return this->bottomInfo;
 }
 
-int NavProgress::getMaxStep() const
+int SegmentWidget::getMaxStep() const
 {
-    return this->maxStep;
+    return this->maxSegment;
 }
 
-int NavProgress::getCurrentStep() const
+int SegmentWidget::getCurrentStep() const
 {
-    return this->currentStep;
+    return this->currentSegment;
 }
 
-NavProgress::NavStyle NavProgress::getNavStyle() const
+SegmentWidget::NavStyle SegmentWidget::getNavStyle() const
 {
     return this->navStyle;
 }
 
-QColor NavProgress::getBackground() const
+QColor SegmentWidget::getBackground() const
 {
     return this->background;
 }
 
-QColor NavProgress::getForeground() const
+QColor SegmentWidget::getForeground() const
 {
     return this->foreground;
 }
 
-QColor NavProgress::getCurrentBackground() const
+QColor SegmentWidget::getCurrentBackground() const
 {
     return this->currentBackground;
 }
 
-QColor NavProgress::getCurrentForeground() const
+QColor SegmentWidget::getCurrentForeground() const
 {
     return this->currentForeground;
 }
 
-QSize NavProgress::sizeHint() const
+QSize SegmentWidget::sizeHint() const
 {
     return QSize(500, 80);
 }
 
-QSize NavProgress::minimumSizeHint() const
+QSize SegmentWidget::minimumSizeHint() const
 {
     return QSize(50, 20);
 }
 
-void NavProgress::setTopInfo(const QStringList &topInfo)
+void SegmentWidget::setBottomText(const QStringList &topInfo)
 {
     if (this->topInfo != topInfo) {
         this->topInfo = topInfo;
@@ -575,7 +576,7 @@ void NavProgress::setTopInfo(const QStringList &topInfo)
     }
 }
 
-void NavProgress::setBottomInfo(const QStringList &bottomInfo)
+void SegmentWidget::setBottomInfo(const QStringList &bottomInfo)
 {
     if (this->bottomInfo != bottomInfo) {
         this->bottomInfo = bottomInfo;
@@ -583,23 +584,23 @@ void NavProgress::setBottomInfo(const QStringList &bottomInfo)
     }
 }
 
-void NavProgress::setMaxStep(int maxStep)
+void SegmentWidget::setMaxSegment(int maxSegment)
 {
-    if (this->maxStep != maxStep && maxStep <= topInfo.count()) {
-        this->maxStep = maxStep;
+    if (this->maxSegment != maxSegment && maxSegment <= topInfo.count()) {
+        this->maxSegment = maxSegment;
         this->update();
     }
 }
 
-void NavProgress::setCurrentStep(int currentStep)
-{    
-    if (this->currentStep != currentStep && currentStep <= maxStep && currentStep >= 0) {
-        this->currentStep = currentStep;
+void SegmentWidget::setCurrentSegment(int currentStep)
+{
+    if (this->currentSegment != currentStep && currentStep <= maxSegment && currentStep >= 0) {
+        this->currentSegment = currentStep;
         this->update();
     }
 }
 
-void NavProgress::setNavStyle(const NavProgress::NavStyle &navStyle)
+void SegmentWidget::setNavStyle(const SegmentWidget::NavStyle &navStyle)
 {
     if (this->navStyle != navStyle) {
         this->navStyle = navStyle;
@@ -607,7 +608,7 @@ void NavProgress::setNavStyle(const NavProgress::NavStyle &navStyle)
     }
 }
 
-void NavProgress::setBackground(const QColor &background)
+void SegmentWidget::setBackground(const QColor &background)
 {
     if (this->background != background) {
         this->background = background;
@@ -615,7 +616,7 @@ void NavProgress::setBackground(const QColor &background)
     }
 }
 
-void NavProgress::setForeground(const QColor &foreground)
+void SegmentWidget::setForeground(const QColor &foreground)
 {
     if (this->foreground != foreground) {
         this->foreground = foreground;
@@ -623,7 +624,7 @@ void NavProgress::setForeground(const QColor &foreground)
     }
 }
 
-void NavProgress::setCurrentBackground(const QColor &currentBackground)
+void SegmentWidget::setCurrentBackground(const QColor &currentBackground)
 {
     if (this->currentBackground != currentBackground) {
         this->currentBackground = currentBackground;
@@ -631,7 +632,7 @@ void NavProgress::setCurrentBackground(const QColor &currentBackground)
     }
 }
 
-void NavProgress::setCurrentForeground(const QColor &currentForeground)
+void SegmentWidget::setCurrentForeground(const QColor &currentForeground)
 {
     if (this->currentForeground != currentForeground) {
         this->currentForeground = currentForeground;

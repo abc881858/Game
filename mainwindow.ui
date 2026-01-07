@@ -70,7 +70,7 @@
         </rect>
        </property>
        <attribute name="label">
-        <string>德国整理区</string>
+        <string>德国修整区</string>
        </attribute>
       </widget>
       <widget class="QWidget" name="D_CX">
@@ -175,7 +175,7 @@
     <property name="title">
      <string>事件步骤</string>
     </property>
-    <addaction name="action1"/>
+    <addaction name="action_Event1"/>
    </widget>
    <widget class="QMenu" name="menu_2">
     <property name="title">
@@ -237,7 +237,7 @@
     <bool>false</bool>
    </attribute>
   </widget>
-  <action name="action1">
+  <action name="action_Event1">
    <property name="text">
     <string>事件：苏联预备队</string>
    </property>

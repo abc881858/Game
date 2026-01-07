@@ -3,19 +3,10 @@
 #include <QWidget>
 #include <QPainterPath>
 
-class NavProgress : public QWidget
+class SegmentWidget : public QWidget
 {
     Q_OBJECT
     Q_ENUMS(NavStyle)
-
-    Q_PROPERTY(int maxStep READ getMaxStep WRITE setMaxStep)
-    Q_PROPERTY(int currentStep READ getCurrentStep WRITE setCurrentStep)
-    Q_PROPERTY(NavStyle navStyle READ getNavStyle WRITE setNavStyle)
-
-    Q_PROPERTY(QColor background READ getBackground WRITE setBackground)
-    Q_PROPERTY(QColor foreground READ getForeground WRITE setForeground)
-    Q_PROPERTY(QColor currentBackground READ getCurrentBackground WRITE setCurrentBackground)
-    Q_PROPERTY(QColor currentForeground READ getCurrentForeground WRITE setCurrentForeground)
 
 public:
     enum NavStyle {
@@ -24,7 +15,7 @@ public:
         NavStyle_ZFB = 2    //支付宝订单流程样式
     };
 
-    explicit NavProgress(QWidget *parent = 0);
+    explicit SegmentWidget(QWidget *parent = 0);
 
 protected:
     void paintEvent(QPaintEvent *);
@@ -43,8 +34,8 @@ private:
     QStringList topInfo;            //导航顶部标签数据
     QStringList bottomInfo;         //导航底部标签数据
 
-    int maxStep;                    //最大步数
-    int currentStep;                //当前第几步
+    int maxSegment;                    //最大步数
+    int currentSegment;                //当前第几步
     NavStyle navStyle;              //导航样式
 
     QColor background;              //背景色
@@ -72,14 +63,14 @@ public:
 
 public slots:
     //设置导航顶部标签数据
-    void setTopInfo(const QStringList &topInfo);
+    void setBottomText(const QStringList &topInfo);
     //设置导航底部标签数据
     void setBottomInfo(const QStringList &bottomInfo);
 
     //设置最大步数
-    void setMaxStep(int maxStep);
+    void setMaxSegment(int maxSegment);
     //设置当前第几步
-    void setCurrentStep(int currentStep);
+    void setCurrentSegment(int currentStep);
     //设置导航样式
     void setNavStyle(const NavStyle &navStyle);
 

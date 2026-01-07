@@ -13,12 +13,12 @@ SOURCES += \
     main.cpp \
     mainwindow.cpp \
     mapgraph.cpp \
-    navprogress.cpp \
     pieceentrywidget.cpp \
     pieceitem.cpp \
     piecelistwidget.cpp \
     placementmanager.cpp \
     regionitem.cpp \
+    segmentwidget.cpp \
     strikegroupdialog.cpp \
     util.cpp
 
@@ -34,12 +34,12 @@ HEADERS += \
     graphicsview.h \
     mainwindow.h \
     mapgraph.h \
-    navprogress.h \
     pieceentrywidget.h \
     pieceitem.h \
     piecelistwidget.h \
     placementmanager.h \
     regionitem.h \
+    segmentwidget.h \
     strikegroupdialog.h \
     util.h
 

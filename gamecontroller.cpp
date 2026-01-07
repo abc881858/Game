@@ -120,7 +120,7 @@ void GameController::onPieceDropped(const QString& pixPath, const QString& event
     // ===== 战斗：打击群投入阶段 =====
     if (m_battle.active && m_battleStep == BattleStep::SetupStrike) {
         // 只有轮到的一方能投入
-        if (phaseSide() == Side::Unknown) {} // 不依赖行动阶段也行
+        if (stepSide() == Side::Unknown) {} // 不依赖行动步骤也行
         if (m_strikeTurn == Side::Unknown) return;
 
         // 过滤兵团（兵团不走这里，兵团靠拖进敌占区触发）
@@ -173,8 +173,8 @@ void GameController::onActionTokenDropped(const QString& pixPath)
 {
     if (!isActionTokenPath(pixPath)) return;
 
-    // 行动阶段中不处理行动签
-    if (m_phase.active) return;
+    // 行动步骤中不处理行动签
+    if (m_actionStep.active) return;
 
     Side side = Side::Unknown;
     if (pixPath.startsWith(":/D/")) side = Side::D;
@@ -193,13 +193,13 @@ void GameController::onActionTokenDropped(const QString& pixPath)
     else if (pixPath.contains("XDQ6")) ap = 6;
     if (ap == 0) return;
 
-    // 打出行动签 -> 获得AP -> addAP 内会 startActionPhase(side)
+    // 打出行动签 -> 获得AP -> addAP 内会 startActionStep(side)
     addAP(side, ap);
 
     emit logLine(QString("行动签：%1 AP +%2\n").arg(side==Side::D ? "德国" : "苏联").arg(ap),
                  Qt::black, true);
 
-    // ✅ 打完这张签后，下一张签轮到对方（等本行动阶段结束后再打）
+    // ✅ 打完这张签后，下一张签轮到对方（等本行动步骤结束后再打）
     m_nextActionTokenSide = (side==Side::D ? Side::S : Side::D);
 }
 
@@ -337,13 +337,13 @@ void GameController::resetAllPiecesMoveFlag()
     for (auto* gi : m_scene->items()) {
         if (gi->type() != PieceType) continue;
         auto* p = static_cast<PieceItem*>(gi);
-        p->setMovedThisActionPhase(false);
+        p->setMovedThisActionStep(false);
     }
 }
 
 void GameController::refreshMovablePieces()
 {
-    const Side side = phaseSide();
+    const Side side = stepSide();
 
     for (auto* gi : m_scene->items()) {
         if (gi->type() != PieceType) continue;
@@ -351,13 +351,13 @@ void GameController::refreshMovablePieces()
         auto* p = static_cast<PieceItem*>(gi);
 
         bool movable =
-            phaseActive() &&
-            ( (m_phase.seg == ActionSeg::Move) || (m_phase.seg == ActionSeg::Battle) ) &&
+            stepActive() &&
+            ( (m_actionStep.segment == ActionSegment::Move) || (m_actionStep.segment == ActionSegment::Battle) ) &&
             (side != Side::Unknown) &&
             (p->kind() == PieceKind::Corps) &&
             (p->side() == side);
 
-        if (movable && p->movedThisActionPhase())
+        if (movable && p->movedThisActionStep())
             movable = false;
 
         p->setFlag(QGraphicsItem::ItemIsMovable, movable);
@@ -396,11 +396,11 @@ int GameController::battleDeclareCost(PieceItem* p, int distance) const
 void GameController::onPieceMovedRegionToRegion(PieceItem *piece, int fromRegionId, int toRegionId, Side side)
 {
     if (!piece) return;
-    if (!phaseActive()) return;
-    if (side != phaseSide()) return;
+    if (!stepActive()) return;
+    if (side != stepSide()) return;
 
     // ====== 1) 陆战环节：拖进敌占区 => 发起/加入战斗 ======
-    if (inBattleSeg()) {
+    if (inBattleSegment()) {
         Side owner = m_owner.value(toRegionId, Side::Unknown);
         if (owner != Side::Unknown && owner != side) {
             // 1) 距离 N（宣战不走“blocked”限制的话就给空集合）
@@ -442,11 +442,11 @@ void GameController::onPieceMovedRegionToRegion(PieceItem *piece, int fromRegion
     }
 
     // ====== 2) 陆上移动环节：走你原有逻辑 ======
-    if (!inMoveSeg()) return;
+    if (!inMoveSegment()) return;
 
     // 已因“进入敌占格”被锁住，则回滚
-    if (piece->movedThisActionPhase()) {
-        rollbackToRegion(piece, fromRegionId, "本行动阶段该兵团已进入敌占格，不能继续移动，已回滚。\n");
+    if (piece->movedThisActionStep()) {
+        rollbackToRegion(piece, fromRegionId, "本行动步骤该兵团已进入敌占格，不能继续移动，已回滚。\n");
         return;
     }
 
@@ -475,8 +475,8 @@ void GameController::onPieceMovedRegionToRegion(PieceItem *piece, int fromRegion
     Side owner = m_owner.value(toRegionId, Side::Unknown);
     if (owner != Side::Unknown && owner != side) {
         m_owner[toRegionId] = side;
-        piece->setMovedThisActionPhase(true);
-        emit logLine("进入敌占格：占领完成，本行动阶段该兵团不能继续移动。\n", Qt::black, true);
+        piece->setMovedThisActionStep(true);
+        emit logLine("进入敌占格：占领完成，本行动步骤该兵团不能继续移动。\n", Qt::black, true);
     } else if (owner == Side::Unknown) {
         // 没维护过占领方时，至少写入当前方
         m_owner[toRegionId] = side;
@@ -486,57 +486,47 @@ void GameController::onPieceMovedRegionToRegion(PieceItem *piece, int fromRegion
     piece->markLastValid(toRegionId);
 }
 
-bool GameController::canDragUnitInMoveSeg(Side side) const
-{
-    if (!phaseActive()) return false;
-    if (!inMoveSeg()) return false;
-    if (side != phaseSide()) return false;
-    if (currentAP(phaseSide()) <= 0) return false;
-    return true;
-}
-
-void GameController::startActionPhase(Side side)
+void GameController::startActionStep(Side side)
 {
     if (side == Side::Unknown) return;
-    if (m_phase.active) return;// 如果已经在行动阶段：一般不允许再次 start（按你规则也可以直接 return）
+    if (m_actionStep.active) return;// 如果已经在行动步骤：一般不允许再次 start（按你规则也可以直接 return）
 
-    m_phase.active = true;
-    m_phase.activeSide = side;
-    m_phase.segIndex = 0;
-    m_phase.seg = ActionSeg::Move;
+    m_actionStep.active = true;
+    m_actionStep.activeSide = side;
+    m_actionStep.segmentIndex = 0;
+    m_actionStep.segment = ActionSegment::Move;
 
-    // 进入行动阶段：重置“本阶段锁定继续移动”标记
+    // 进入行动步骤：重置“本阶段锁定继续移动”标记
     resetAllPiecesMoveFlag();
 
     // 同步移动规则开关 + 刷新可拖拽
     refreshMovablePieces();
 
     // 通知 UI
-    emit requestEndSegEnabled(true);
-    emit requestNavStep(1); // Move=1
-    emit actionPhaseChanged(true, m_phase.activeSide, m_phase.segIndex, m_phase.seg);
+    emit setCurrentSegment(1);
+    emit actionStepChanged(true, m_actionStep.activeSide, m_actionStep.segmentIndex, m_actionStep.segment);
 
     // 日志（走你已有信号）
-    emit logLine(QString("%1打出行动签：进入行动阶段（从【陆上移动】开始）\n").arg(side==Side::D ? "德国" : "苏联"), Qt::black, true);
+    emit logLine(QString("%1打出行动签：进入行动步骤（从【陆上移动】开始）\n").arg(side==Side::D ? "德国" : "苏联"), Qt::black, true);
 }
 
-void GameController::advanceSegment()
+void GameController::goNextSegment()
 {
-    if (!m_phase.active) return;
+    if (!m_actionStep.active) return;
 
-    if (m_phase.segIndex < 4) {
-        m_phase.segIndex++;
-        m_phase.seg = ActionSeg(m_phase.segIndex);
+    if (m_actionStep.segmentIndex < 4) {
+        m_actionStep.segmentIndex++;
+        m_actionStep.segment = ActionSegment(m_actionStep.segmentIndex);
 
         // 切换环节：同步移动规则（只有 Move 环节允许移动）
         refreshMovablePieces();
 
         // UI 更新：NavProgress 用 1..5
-        emit requestNavStep(m_phase.segIndex + 1);
-        emit actionPhaseChanged(true, m_phase.activeSide, m_phase.segIndex, m_phase.seg);
+        emit setCurrentSegment(m_actionStep.segmentIndex + 1);
+        emit actionStepChanged(true, m_actionStep.activeSide, m_actionStep.segmentIndex, m_actionStep.segment);
 
         // 日志提示
-        switch (m_phase.segIndex) {
+        switch (m_actionStep.segmentIndex) {
         case 1: emit logLine("陆上移动结束，进入陆战环节。\n", Qt::black, true); break;
         case 2: emit logLine("陆战结束，进入调动环节。\n", Qt::black, true); break;
         case 3: emit logLine("调动结束，进入准备环节。\n", Qt::black, true); break;
@@ -546,16 +536,16 @@ void GameController::advanceSegment()
         return;
     }
 
-    // segIndex==4: 结束补给 -> 行动阶段结束
-    emit logLine("补给结束：本行动阶段结束。\n", Qt::black, true);
-    endActionPhase();
+    // segmentIndex==4: 结束补给 -> 行动步骤结束
+    emit logLine("补给结束：本行动步骤结束。\n", Qt::black, true);
+    endActionStep();
 }
 
-void GameController::endActionPhase()
+void GameController::endActionStep()
 {
-    if (!m_phase.active) return;
+    if (!m_actionStep.active) return;
 
-    const Side finishedSide = m_phase.activeSide;
+    const Side finishedSide = m_actionStep.activeSide;
 
     clearAP(finishedSide);
 
@@ -565,18 +555,17 @@ void GameController::endActionPhase()
 
     m_nextActionTokenSide = nextSide;
 
-    m_phase.active = false;
-    m_phase.activeSide = Side::Unknown;
-    m_phase.segIndex = 0;
-    m_phase.seg = ActionSeg::Move;
+    m_actionStep.active = false;
+    m_actionStep.activeSide = Side::Unknown;
+    m_actionStep.segmentIndex = 0;
+    m_actionStep.segment = ActionSegment::Move;
 
     refreshMovablePieces();
 
-    emit requestNavStep(0);
-    emit requestEndSegEnabled(false);
-    emit actionPhaseChanged(false, Side::Unknown, 0, ActionSeg::Move);
+    emit setCurrentSegment(0);
+    emit actionStepChanged(false, Side::Unknown, 0, ActionSegment::Move);
 
-    emit logLine(QString("行动阶段结束：下一张行动签由【%1】打出。\n")
+    emit logLine(QString("行动步骤结束：下一张行动签由【%1】打出。\n")
                  .arg(nextSide==Side::D ? "德国" : "苏联"),
                  Qt::black, true);
 }
@@ -628,9 +617,9 @@ void GameController::addAP(Side side, int delta)
 
     emit stateChanged();
 
-    // 行动阶段：delta>0 且未active -> start
-    if (delta > 0 && !m_phase.active) {
-        startActionPhase(side);
+    // 行动步骤：delta>0 且未active -> start
+    if (delta > 0 && !m_actionStep.active) {
+        startActionStep(side);
     } else {
         refreshMovablePieces();
     }
@@ -657,9 +646,9 @@ void GameController::clearAP(Side side)
 
 void GameController::setFirstPlayerD()
 {
-    // 若当前还在行动阶段，可选择强制结束（按你需要）
-    if (m_phase.active) {
-        endActionPhase();
+    // 若当前还在行动步骤，可选择强制结束（按你需要）
+    if (m_actionStep.active) {
+        endActionStep();
     }
 
     // 先手只是决定谁打第一张行动签，不给AP
@@ -668,15 +657,14 @@ void GameController::setFirstPlayerD()
 
     m_nextActionTokenSide = Side::D;
 
-    emit requestNavStep(0);
-    emit requestEndSegEnabled(false);
+    emit setCurrentSegment(0);
     emit logLine(QString("先手确定：德国先打出行动签。\n"), Qt::black, true);
 }
 
 void GameController::setFirstPlayerS()
 {
-    if (m_phase.active) {
-        endActionPhase();
+    if (m_actionStep.active) {
+        endActionStep();
     }
 
     clearAP(Side::D);
@@ -684,8 +672,7 @@ void GameController::setFirstPlayerS()
 
     m_nextActionTokenSide = Side::S;
 
-    emit requestNavStep(0);
-    emit requestEndSegEnabled(false);
+    emit setCurrentSegment(0);
     emit logLine(QString("先手确定：苏联先打出行动签。\n"), Qt::black, true);
 }
 
@@ -693,8 +680,8 @@ bool GameController::canDragActionToken(Side side) const
 {
     if (side!=Side::D && side!=Side::S) return false;
 
-    // 行动阶段中不允许再打行动签
-    if (m_phase.active) return false;
+    // 行动步骤中不允许再打行动签
+    if (m_actionStep.active) return false;
 
     // 只有轮到的那方可以拖行动签
     return side == m_nextActionTokenSide;
@@ -856,11 +843,20 @@ void GameController::onStrikePass()
     emit strikeGroupsChanged(m_battle.strikeA, m_battle.strikeD, m_strikeTurn, false);
 }
 
-bool GameController::canDragUnitInBattleSeg(Side side) const
+bool GameController::canDragUnitInMoveSegment(Side side) const
 {
-    if (!phaseActive()) return false;
-    if (!inBattleSeg()) return false;
-    if (side != phaseSide()) return false; // 只允许当前行动方
+    if (!stepActive()) return false;
+    if (!inMoveSegment()) return false;
+    if (side != stepSide()) return false;
+    if (currentAP(stepSide()) <= 0) return false;
+    return true;
+}
+
+bool GameController::canDragUnitInBattleSegment(Side side) const
+{
+    if (!stepActive()) return false;
+    if (!inBattleSegment()) return false;
+    if (side != stepSide()) return false; // 只允许当前行动方
     return true;
 }
 

@@ -57,11 +57,11 @@ private:
     Side m_side = Side::Unknown;    // 你 setUnitMeta 时保存的阵营
 
 public:
-    bool movedThisActionPhase() const { return m_movedThisActionPhase; }
-    void setMovedThisActionPhase(bool v) { m_movedThisActionPhase = v; }
+    bool movedThisActionStep() const { return m_movedThisActionStep; }
+    void setMovedThisActionStep(bool v) { m_movedThisActionStep = v; }
 
 private:
-    bool m_movedThisActionPhase = false;
+    bool m_movedThisActionStep = false;
 
 signals:
     void splitRequested(PieceItem* piece, int a, int b);

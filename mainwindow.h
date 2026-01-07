@@ -7,7 +7,7 @@
 #include "piecelistwidget.h"
 #include "util.h"
 #include "gamecontroller.h"
-#include "navprogress.h"
+#include "segmentwidget.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -26,11 +26,10 @@ public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
-public slots:
-    void appendLog(const QString &line, const QColor &color, bool newLine);
-    void refreshStatusUI();
-
 private:
+    Ui::MainWindow *ui = nullptr;
+    SegmentWidget *m_segmentWidget;
+
     void initDockSystem();
     void initCentralView();
     void initScene();
@@ -41,9 +40,6 @@ private:
 
     PieceListWidget* createPieceList(QWidget* host);
 
-private:
-    Ui::MainWindow *ui = nullptr;
-
     // Docking
     ads::CDockManager* m_dockManager = nullptr;
     ads::CDockWidget*  m_centralDock = nullptr;
@@ -53,9 +49,12 @@ private:
     GraphicsFrame *m_graphicsFrame = nullptr;
     GraphicsView *m_graphicsView = nullptr;
 
-    // Lists
-    PieceListWidget *pieceListWidget_D = nullptr;
-    PieceListWidget *pieceListWidget_S = nullptr;
+    PieceListWidget *pieceListWidget_D_DMQ = nullptr;
+    PieceListWidget *pieceListWidget_D_XZQ = nullptr;
+    PieceListWidget *pieceListWidget_D_CX = nullptr;
+    PieceListWidget *pieceListWidget_S_DMQ = nullptr;
+    PieceListWidget *pieceListWidget_S_XZQ = nullptr;
+    PieceListWidget *pieceListWidget_S_CX = nullptr;
 
     // Controller
     GameController* m_gameController = nullptr;
@@ -65,16 +64,19 @@ private:
 
     // ===== 状态显示控件 =====
     QLabel* m_turnLabel = nullptr;
-
     QLabel* m_npLabelD = nullptr;
     QLabel* m_oilLabelD = nullptr;
     QLabel* m_apLabelD = nullptr;
     QLabel* m_rpLabelD = nullptr;
-
     QLabel* m_npLabelS = nullptr;
-    QLabel* m_oilLabelS = nullptr;
     QLabel* m_apLabelS = nullptr;
     QLabel* m_rpLabelS = nullptr;
 
-    NavProgress *m_navProgress;
+public slots:
+    void actionEvent1();
+    void actionRollDiceD();
+    void actionRollDiceS();
+    void setCurrentSegment(int currentSegment);
+    void refreshStatusUI();
+    void appendLog(const QString &line, const QColor &color, bool newLine);
 };
