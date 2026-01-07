@@ -259,7 +259,7 @@ void GameController::onSplitRequested(PieceItem* piece, int a, int b)
 PieceItem* GameController::placeNewPieceToRegion(int regionId,
                                                  const QString& pixPath,
                                                  qreal z,
-                                                 const QString& eventId,
+                                                 const QString& /*eventId*/,
                                                  bool isEvent)
 {
     if (!m_scene || !m_placementManager) return nullptr;
@@ -667,10 +667,8 @@ void GameController::clearAP(Side side)
     refreshMovablePieces();
 }
 
-void GameController::setFirstPlayer(Side side)
+void GameController::setFirstPlayerD()
 {
-    if (side!=Side::D && side!=Side::S) return;
-
     // 若当前还在行动阶段，可选择强制结束（按你需要）
     if (m_phase.active) {
         endActionPhase();
@@ -680,14 +678,27 @@ void GameController::setFirstPlayer(Side side)
     clearAP(Side::D);
     clearAP(Side::S);
 
-    m_nextActionTokenSide = side;
+    m_nextActionTokenSide = Side::D;
 
-    // UI：不在行动阶段
     emit requestNavStep(0);
     emit requestEndSegEnabled(false);
+    emit logLine(QString("先手确定：德国先打出行动签。\n"), Qt::black, true);
+}
 
-    emit logLine(QString("先手确定：%1先打出行动签。\n").arg(side==Side::D?"德国":"苏联"),
-                 Qt::black, true);
+void GameController::setFirstPlayerS()
+{
+    if (m_phase.active) {
+        endActionPhase();
+    }
+
+    clearAP(Side::D);
+    clearAP(Side::S);
+
+    m_nextActionTokenSide = Side::S;
+
+    emit requestNavStep(0);
+    emit requestEndSegEnabled(false);
+    emit logLine(QString("先手确定：苏联先打出行动签。\n"), Qt::black, true);
 }
 
 bool GameController::canDragActionToken(Side side) const

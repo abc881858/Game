@@ -37,7 +37,6 @@ private:
     void initControllers();
     void initLogDock();
     void initStatusDock();
-    void initActions();
     void initPieceLists();
 
     PieceListWidget* createPieceList(QWidget* host);

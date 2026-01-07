@@ -90,21 +90,20 @@ public:
 
     void resetAllPiecesMoveFlag();
     bool canDragUnitInMoveSeg(Side side) const;
-
-    void setFirstPlayer(Side side);                 // 点击“德国/苏联先手”
     bool canDragActionToken(Side side) const;       // 先手阶段允许拖拽行动签
-
     bool canDragUnitInBattleSeg(Side side) const;
-
     void onPieceDropped(const QString& pixPath, const QString& eventId, int regionId, bool isEvent);
     void onActionTokenDropped(const QString& pixPath);
-
     void onPieceMovedRegionToRegion(PieceItem* piece, int fromRegionId, int toRegionId, Side side);
 
 public slots:
+    void setFirstPlayerD();
+    void setFirstPlayerS();
     void onDropRequested(QPointF scenePos, QString pixPath, QString eventId, bool isEvent);
     void refreshMovablePieces();
     void onSplitRequested(PieceItem* piece, int a, int b);
+    void onStrikePass();
+    void onPieceDropReleased(PieceItem *piece, const QPointF &sceneCenter);
 
 signals:
     // ===== UI 控制用（或你也可以只用 actionPhaseChanged） =====
@@ -180,8 +179,4 @@ private:
     BattleStep m_battleStep = BattleStep::None;
 
     int battleDeclareCost(PieceItem *p, int distance) const;
-
-public slots:
-    void onStrikePass();
-    void onPieceDropReleased(PieceItem *piece, const QPointF &sceneCenter);
 };

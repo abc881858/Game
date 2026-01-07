@@ -33,7 +33,6 @@ MainWindow::MainWindow(QWidget *parent)
     initControllers();
     initLogDock();
     initStatusDock();
-    initActions();
     initPieceLists();
     refreshStatusUI();
 }
@@ -83,6 +82,16 @@ void MainWindow::initScene()
 
 void MainWindow::initControllers()
 {
+    m_navProgress = new NavProgress(this);
+    m_navProgress->setTopInfo(QStringList() << "陆上移动" << "陆战" << "调动" << "准备" << "补给");
+    m_navProgress->setCurrentStep(0);
+    m_navProgress->setCurrentBackground(QColor(24,189,155));
+
+    ui->toolBar->addWidget(m_navProgress);
+    ui->toolBar->addAction(ui->action_End);
+    ui->toolBar->addAction(ui->action_DTZ);
+    ui->toolBar->addAction(ui->action_STZ);
+
     m_gameController = new GameController(scene, this);
 
     connect(ui->action_End, &QAction::triggered, m_gameController, &GameController::advanceSegment);
@@ -103,15 +112,8 @@ void MainWindow::initControllers()
         dlg->show();
     });
 
-    connect(ui->action_D, &QAction::triggered, this, [this](){
-        if (!m_gameController) return;
-        m_gameController->setFirstPlayer(Side::D);
-    });
-
-    connect(ui->action_S, &QAction::triggered, this, [this](){
-        if (!m_gameController) return;
-        m_gameController->setFirstPlayer(Side::S);
-    });
+    connect(ui->action_D, &QAction::triggered, m_gameController, &GameController::setFirstPlayerD);
+    connect(ui->action_S, &QAction::triggered, m_gameController, &GameController::setFirstPlayerS);
 
     connect(ui->action_DTZ, &QAction::triggered, this, [this](){
         int num = QRandomGenerator::global()->bounded(1, 7);
@@ -123,22 +125,15 @@ void MainWindow::initControllers()
         appendLog(QString("苏联掷骰子：%1\n").arg(num), QColor(183,100,50), true);
     });
 
-    // connect(m_graphicsView, &GraphicsView::pieceDropped, m_gameController, &GameController::onPieceDropped);
-    // connect(m_graphicsView, &GraphicsView::actionTokenDropped, m_gameController, &GameController::onActionTokenDropped);
-
     connect(m_graphicsView, &GraphicsView::dropRequested, m_gameController, &GameController::onDropRequested);
 
     connect(m_gameController, &GameController::stateChanged, this, &MainWindow::refreshStatusUI);
 
     connect(m_gameController, &GameController::logLine, this, &MainWindow::appendLog);
 
-    connect(m_gameController, &GameController::requestEndSegEnabled, this, [this](bool en){
-        if (ui->action_End) ui->action_End->setEnabled(en);
-    });
+    connect(m_gameController, &GameController::requestEndSegEnabled, ui->action_End, &QAction::setEnabled);
 
-    connect(m_gameController, &GameController::requestNavStep, this, [this](int step){
-        if (m_navProgress) m_navProgress->setCurrentStep(step);
-    });
+    connect(m_gameController, &GameController::requestNavStep, m_navProgress, &NavProgress::setCurrentStep);
 }
 
 void MainWindow::initLogDock()
@@ -216,19 +211,6 @@ void MainWindow::initStatusDock()
     ui->toolBar->addAction(statusAction);
 
     statusDock->toggleView(false);
-}
-
-void MainWindow::initActions()
-{
-    m_navProgress = new NavProgress(this);
-    m_navProgress->setTopInfo(QStringList() << "陆上移动" << "陆战" << "调动" << "准备" << "补给");
-    m_navProgress->setCurrentStep(0);
-    m_navProgress->setCurrentBackground(QColor(24,189,155));
-
-    ui->toolBar->addWidget(m_navProgress);
-    ui->toolBar->addAction(ui->action_End);
-    ui->toolBar->addAction(ui->action_DTZ);
-    ui->toolBar->addAction(ui->action_STZ);
 }
 
 PieceListWidget* MainWindow::createPieceList(QWidget* host)
@@ -366,7 +348,6 @@ void MainWindow::initPieceLists()
 
 void MainWindow::refreshStatusUI()
 {
-    if (!m_gameController) return;
     const auto& st = m_gameController->state();
 
     if (m_turnLabel) m_turnLabel->setText(QString::number(st.turn));
