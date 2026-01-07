@@ -20,10 +20,6 @@
         <file>S_D2302.png</file>
         <file>S_E121.png</file>
         <file>S_E131.png</file>
-        <file>S_F1.png</file>
-        <file>S_F2.png</file>
-        <file>S_F3.png</file>
-        <file>S_F4.png</file>
         <file>S_H3.png</file>
         <file>S_H4.png</file>
         <file>S_I6.png</file>
@@ -37,5 +33,9 @@
         <file>S_ZL.png</file>
         <file>S_XDQ2.png</file>
         <file>S_XDQ6.png</file>
+        <file>S_1JYS.png</file>
+        <file>S_2JYS.png</file>
+        <file>S_3JYS.png</file>
+        <file>S_4JYS.png</file>
     </qresource>
 </RCC>

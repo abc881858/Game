@@ -2,7 +2,6 @@
 #include "qfontdatabase.h"
 #include "qpainter.h"
 #include <QPainterPath>
-#include "qdebug.h"
 
 NavProgress::NavProgress(QWidget *parent) : QWidget(parent)
 {

@@ -1,7 +1,6 @@
 #include "graphicsview.h"
 #include <QWheelEvent>
 #include <QMouseEvent>
-#include <QDebug>
 #include <QDragEnterEvent>
 #include <QDropEvent>
 #include "graphicsframe.h"

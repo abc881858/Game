@@ -1,16 +1,12 @@
 #include "gamecontroller.h"
-
 #include <QGraphicsScene>
 #include <QPixmap>
-#include <QDebug>
-
+#include <QMessageBox>
 #include "placementmanager.h"
 #include "util.h"
-
 #include "battlesetupdialog.h"
 #include "strikegroupdialog.h"
 #include "battlefielddialog.h"
-#include <QMessageBox>
 
 static inline bool isActionTokenPath(const QString& pixPath)
 {
@@ -69,7 +65,7 @@ GameController::GameController(QGraphicsScene* scene, QObject* parent)
 
     placeNewPieceToRegion(1,  ":/D/D_2JBT.png", 20.0); // 挪威北部
     placeNewPieceToRegion(2,  ":/S/S_2JBT.png", 20.0); // 摩尔曼斯克
-    placeNewPieceToRegion(6,  ":/S/S_F4.png", 20.0);   // 列宁格勒
+    placeNewPieceToRegion(6,  ":/S/S_4JYS.png", 20.0); // 列宁格勒
     placeNewPieceToRegion(11, ":/D/D_4JBT.png", 20.0); // 波罗的海国家
     placeNewPieceToRegion(11, ":/D/D_4JBT.png", 20.0);
     placeNewPieceToRegion(14, ":/D/D_4JBT.png", 20.0); // 东普鲁士
@@ -84,7 +80,7 @@ GameController::GameController(QGraphicsScene* scene, QObject* parent)
     placeNewPieceToRegion(30, ":/L/L_4JBT.png", 20.0); // 罗马尼亚
     placeNewPieceToRegion(30, ":/L/L_3JBT.png", 20.0);
     placeNewPieceToRegion(30, ":/D/D_4JBT.png", 20.0);
-    placeNewPieceToRegion(31, ":/S/S_F4.png", 20.0);   // 克里米亚
+    placeNewPieceToRegion(31, ":/S/S_4JYS.png", 20.0); // 克里米亚
     placeNewPieceToRegion(34, ":/S/S_3JBT.png", 20.0); // 巴库
 
     refreshMovablePieces();
@@ -103,6 +99,10 @@ PieceItem* GameController::createPieceFromPixPath(const QString& pixPath)
     int lvl;
     if (parseCorpsFromPixPath(pixPath, side, lvl)) {
         item->setUnitMeta(PieceKind::Corps, side, lvl, pixPath);
+    } else if (parseFortressFromPixPath(pixPath, side, lvl)) {
+        item->setUnitMeta(PieceKind::Fortress, side, lvl, pixPath);
+    } else if (parseFortressFromPixPath(pixPath, side, lvl)) {
+        item->setUnitMeta(PieceKind::Fortress, side, lvl, pixPath);
     } else {
         item->setUnitMeta(PieceKind::Other, Side::Unknown, 0, pixPath);
     }
@@ -209,7 +209,7 @@ void GameController::onDropRequested(QPointF scenePos, QString pixPath, QString 
 
     // 行动签
     if (pixPath.contains("_XDQ", Qt::CaseSensitive)) {
-        if (m_scene && m_scene->sceneRect().contains(scenePos)) {
+        if (m_scene->sceneRect().contains(scenePos)) {
             onActionTokenDropped(pixPath);
         } else {
             emit logLine("行动签必须丢在地图范围内。\n", Qt::black, true);
@@ -226,7 +226,7 @@ void GameController::onDropRequested(QPointF scenePos, QString pixPath, QString 
 
 void GameController::onSplitRequested(PieceItem* piece, int a, int b)
 {
-    if (!piece || !m_scene || !m_placementManager) return;
+    if (!piece) return;
 
     const int regionId = piece->regionId();
     if (regionId < 0) return;
@@ -262,7 +262,6 @@ PieceItem* GameController::placeNewPieceToRegion(int regionId,
                                                  const QString& /*eventId*/,
                                                  bool isEvent)
 {
-    if (!m_scene || !m_placementManager) return nullptr;
     if (regionId < 0) return nullptr;
     if (pixPath.isEmpty()) return nullptr;
 
@@ -275,7 +274,7 @@ PieceItem* GameController::placeNewPieceToRegion(int regionId,
         return nullptr;
     }
 
-    auto* item = createPieceFromPixPath(pixPath);
+    PieceItem* item = createPieceFromPixPath(pixPath);
     if (!item) return nullptr;
 
     item->setZValue(z);
@@ -319,10 +318,7 @@ int GameController::moveCost(PieceItem* p, int distance) const
 QSet<int> GameController::buildBlockedNodesForSide(Side moverSide) const
 {
     QSet<int> blocked;
-    if (!m_placementManager) return blocked;
 
-    // “只能进入没有敌方兵团或要塞的格”
-    // 这里先按“敌方兵团存在则阻挡”，要塞你之后做 PieceKind::Fortress 再加上。
     for (int rid = 0; rid < 35; ++rid) {
         const auto pieces = m_placementManager->piecesInRegion(rid);
         for (auto* p : pieces) {
@@ -342,7 +338,6 @@ QSet<int> GameController::buildBlockedNodesForSide(Side moverSide) const
 
 void GameController::resetAllPiecesMoveFlag()
 {
-    if (!m_scene) return;
     for (auto* gi : m_scene->items()) {
         if (gi->type() != PieceType) continue;
         auto* p = static_cast<PieceItem*>(gi);
@@ -352,8 +347,6 @@ void GameController::resetAllPiecesMoveFlag()
 
 void GameController::refreshMovablePieces()
 {
-    if (!m_scene) return;
-
     const Side side = phaseSide();
 
     for (auto* gi : m_scene->items()) {
@@ -378,7 +371,7 @@ void GameController::refreshMovablePieces()
 
 void GameController::rollbackToRegion(PieceItem* piece, int regionId, const QString& reason)
 {
-    if (!piece || !m_placementManager) return;
+    if (!piece) return;
     if (regionId < 0) return;
 
     if (!reason.isEmpty()) {
@@ -409,7 +402,6 @@ void GameController::onPieceMovedRegionToRegion(PieceItem *piece, int fromRegion
     if (!piece) return;
     if (!phaseActive()) return;
     if (side != phaseSide()) return;
-    if (!m_placementManager) return;
 
     // ====== 1) 陆战环节：拖进敌占区 => 发起/加入战斗 ======
     if (inBattleSeg()) {
@@ -878,7 +870,7 @@ bool GameController::canDragUnitInBattleSeg(Side side) const
 
 void GameController::onPieceDropReleased(PieceItem* piece, const QPointF& sceneCenter)
 {
-    if (!piece || !m_scene || !m_placementManager) return;
+    if (!piece) return;
 
     const int toId = hitRegionIdAt(sceneCenter);
     if (toId < 0) {
@@ -906,8 +898,6 @@ void GameController::onPieceDropReleased(PieceItem* piece, const QPointF& sceneC
 
 int GameController::hitRegionIdAt(const QPointF& scenePos) const
 {
-    if (!m_scene) return -1;
-
     const auto items = m_scene->items(scenePos, Qt::IntersectsItemShape, Qt::DescendingOrder);
     for (auto* it : items) {
         if (it->type() == RegionType) {
@@ -919,7 +909,7 @@ int GameController::hitRegionIdAt(const QPointF& scenePos) const
 
 void GameController::rollbackToLastValid(PieceItem* piece)
 {
-    if (!piece || !m_placementManager) return;
+    if (!piece) return;
 
     const int last = piece->lastValidRegionId();
     if (last < 0) return;
@@ -933,7 +923,7 @@ void GameController::rollbackToLastValid(PieceItem* piece)
 
 void GameController::snapPieceToRegion(PieceItem* piece, int regionId)
 {
-    if (!piece || !m_placementManager) return;
+    if (!piece) return;
     if (regionId < 0) return;
 
     m_placementManager->movePieceToRegion(piece, regionId);

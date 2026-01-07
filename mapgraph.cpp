@@ -2,7 +2,8 @@
 #include <queue>
 #include <limits>
 
-MapGraph::MapGraph() {
+MapGraph::MapGraph()
+{
     adj.resize(35);
 
     auto addEdge = [&](int a, int b, int w){
@@ -82,9 +83,12 @@ MapGraph::MapGraph() {
     addEdge(33, 34, 2);
 }
 
-int MapGraph::shortestDistance(int src, int dst, const QSet<int>& blocked) const {
+int MapGraph::shortestDistance(int src, int dst, const QSet<int>& blocked) const
+{
     if (src < 0 || dst < 0 || src >= adj.size() || dst >= adj.size()) return -1;
     if (src == dst) return 0;
+
+    if (blocked.contains(dst)) return -1; // dst 在 blocked => 一定不可达
 
     const int INF = std::numeric_limits<int>::max()/4;
     QVector<int> dist(adj.size(), INF);
@@ -101,7 +105,7 @@ int MapGraph::shortestDistance(int src, int dst, const QSet<int>& blocked) const
         if (v == dst) return d;
 
         for (auto [to, w] : adj[v]) {
-            if (to != dst && blocked.contains(to)) continue; // 允许“到达终点”，但中途不可走blocked
+            if (blocked.contains(to)) continue; // blocked 节点一律不允许进入（包括 dst）
             int nd = d + w;
             if (nd < dist[to]) {
                 dist[to] = nd;
