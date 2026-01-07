@@ -8,7 +8,6 @@ GraphicsFrame::GraphicsFrame(QWidget *parent)
 {
     setFrameStyle(Sunken | StyledPanel);
     m_graphicsView = new GraphicsView(this);
-
     m_graphicsView->setRenderHint(QPainter::Antialiasing, true);
     m_graphicsView->setOptimizationFlags(QGraphicsView::DontSavePainterState);
     m_graphicsView->setViewportUpdateMode(QGraphicsView::SmartViewportUpdate);

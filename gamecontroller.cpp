@@ -238,7 +238,7 @@ void GameController::onSplitRequested(PieceItem* piece, int a, int b)
 
     // 2) 从 scene 删除旧棋子
     m_scene->removeItem(piece);
-    piece->deleteLater(); // ✅ 避免 delete this 风险
+    piece->deleteLater();
 
     // 3) 生成两个新兵团并放回同城
     auto spawnOne = [&](int lvl){
@@ -256,11 +256,7 @@ void GameController::onSplitRequested(PieceItem* piece, int a, int b)
                  .arg(b), Qt::black, true);
 }
 
-PieceItem* GameController::placeNewPieceToRegion(int regionId,
-                                                 const QString& pixPath,
-                                                 qreal z,
-                                                 const QString& /*eventId*/,
-                                                 bool isEvent)
+PieceItem* GameController::placeNewPieceToRegion(int regionId, const QString& pixPath, qreal z, const QString& /*eventId*/, bool isEvent)
 {
     if (regionId < 0) return nullptr;
     if (pixPath.isEmpty()) return nullptr;

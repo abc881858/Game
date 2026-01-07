@@ -22,8 +22,7 @@ protected:
         const QString pixPath = it->data(Qt::UserRole).toString();
 
         auto *mime = new QMimeData;
-        mime->setData(DragDrop::MimeEventPiece,
-                      DragDrop::packEventPiece(eventId, pixPath).toUtf8());
+        mime->setData(DragDrop::MimeEventPiece, DragDrop::packEventPiece(eventId, pixPath).toUtf8());
 
         QDrag drag(this);
         drag.setMimeData(mime);
