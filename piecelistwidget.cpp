@@ -21,8 +21,8 @@ void PieceListWidget::startDrag(Qt::DropActions)
     if (pixPath.contains("_XDQ", Qt::CaseSensitive)) {
         if (!m_controller->canDragActionToken(m_side)) return;
     } else {
-        if (!(m_controller->canDragUnitInMoveSegment(m_side) ||
-              m_controller->canDragUnitInBattleSegment(m_side)))
+        if (!(m_controller->canDragPieceInMoveSegment(m_side) ||
+              m_controller->canDragPieceInBattleSegment(m_side)))
         return;
     }
 

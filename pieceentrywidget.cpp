@@ -17,7 +17,7 @@ PieceEntryWidget::PieceEntryWidget(const QIcon& icon, const QString& name, QWidg
     f.setBold(true);
     m_countLabel->setFont(f);
     m_countLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
-    m_countLabel->setMinimumWidth(30); // 右侧列宽，自己调
+    m_countLabel->setMinimumWidth(30); // 右侧列宽
 
     auto* lay = new QHBoxLayout(this);
     lay->setContentsMargins(6,4,6,4);
@@ -42,8 +42,7 @@ void PieceEntryWidget::setCount(int c)
 
 void PieceEntryWidget::setDisabledVisual(bool dis)
 {
-    // 视觉灰掉
-    setEnabled(!dis);              // 也会让鼠标/选中变“不可用”
+    setEnabled(!dis); // 视觉灰掉, 也会让鼠标/选中变“不可用”
     if (dis) {
         m_countLabel->setStyleSheet("color: rgb(160,160,160);");
         m_nameLabel->setStyleSheet("color: rgb(160,160,160);");

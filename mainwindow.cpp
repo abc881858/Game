@@ -42,9 +42,6 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
-// =====================================================
-// 初始化阶段
-// =====================================================
 void MainWindow::initDockSystem()
 {
     auto *hostLayout = new QVBoxLayout(ui->dockWidget);
@@ -100,7 +97,7 @@ void MainWindow::initControllers()
     connect(ui->action_D, &QAction::triggered, m_gameController, &GameController::setFirstPlayerD);
     connect(ui->action_S, &QAction::triggered, m_gameController, &GameController::setFirstPlayerS);
 
-    connect(m_graphicsView, &GraphicsView::dropRequested, m_gameController, &GameController::onDropRequested);
+    connect(m_graphicsView, &GraphicsView::dropPieceToScene, m_gameController, &GameController::dropPieceToScene);
 
     connect(m_gameController, &GameController::setCurrentSegment, m_segmentWidget, &SegmentWidget::setCurrentSegment);
 
@@ -175,26 +172,25 @@ void MainWindow::initStatusDock()
     ui->toolBar->addAction(statusAction);
 }
 
-PieceListWidget* MainWindow::createPieceList(QWidget* host)
-{
-    auto *list = new PieceListWidget(host);
-    list->setViewMode(QListView::IconMode);
-    list->setIconSize(QSize(72,72));
-    list->setResizeMode(QListView::Adjust);
-    list->setMovement(QListView::Static);
-    list->setSpacing(8);
-    list->setDragEnabled(true);
-    list->setSelectionMode(QAbstractItemView::SingleSelection);
-
-    auto *layout = new QVBoxLayout(host);
-    layout->setContentsMargins(4,4,4,4);
-    layout->addWidget(list);
-
-    return list;
-}
-
 void MainWindow::initPieceLists()
 {
+    auto createPieceList = [&](QWidget* host) {
+        auto *list = new PieceListWidget(host);
+        list->setViewMode(QListView::IconMode);
+        list->setIconSize(QSize(72,72));
+        list->setResizeMode(QListView::Adjust);
+        list->setMovement(QListView::Static);
+        list->setSpacing(8);
+        list->setDragEnabled(true);
+        list->setSelectionMode(QAbstractItemView::SingleSelection);
+
+        auto *layout = new QVBoxLayout(host);
+        layout->setContentsMargins(4,4,4,4);
+        layout->addWidget(list);
+
+        return list;
+    };
+
     pieceListWidget_D_DMQ = createPieceList(ui->D_DMQ);
     pieceListWidget_D_XZQ = createPieceList(ui->D_XZQ);
     pieceListWidget_D_CX = createPieceList(ui->D_CX);
@@ -359,7 +355,7 @@ void MainWindow::setCurrentSegment(int currentSegment)
 
 void MainWindow::refreshStatusUI()
 {
-    const auto& st = m_gameController->state();
+    const auto& st = m_gameController->gameState();
 
     if (m_turnLabel) m_turnLabel->setText(QString::number(st.turn));
     if (m_npLabelD)  m_npLabelD->setText(QString::number(st.npD));

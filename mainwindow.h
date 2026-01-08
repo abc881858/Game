@@ -28,7 +28,6 @@ public:
 
 private:
     Ui::MainWindow *ui = nullptr;
-    SegmentWidget *m_segmentWidget;
 
     void initDockSystem();
     void initCentralView();
@@ -38,13 +37,9 @@ private:
     void initStatusDock();
     void initPieceLists();
 
-    PieceListWidget* createPieceList(QWidget* host);
-
-    // Docking
     ads::CDockManager* m_dockManager = nullptr;
     ads::CDockWidget*  m_centralDock = nullptr;
 
-    // Graphics
     QGraphicsScene *scene = nullptr;
     GraphicsFrame *m_graphicsFrame = nullptr;
     GraphicsView *m_graphicsView = nullptr;
@@ -56,13 +51,12 @@ private:
     PieceListWidget *pieceListWidget_S_XZQ = nullptr;
     PieceListWidget *pieceListWidget_S_CX = nullptr;
 
-    // Controller
+    SegmentWidget *m_segmentWidget = nullptr;
+
     GameController* m_gameController = nullptr;
 
-    // Log
     QTextEdit *logTextEdit = nullptr;
 
-    // ===== 状态显示控件 =====
     QLabel* m_turnLabel = nullptr;
     QLabel* m_npLabelD = nullptr;
     QLabel* m_oilLabelD = nullptr;

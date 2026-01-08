@@ -38,6 +38,9 @@ public:
     QPointF lastValidPos() const { return m_lastValidPos; }
     int lastValidRegionId() const { return m_lastValidRegionId; }
 
+    bool movedThisActionStep() const { return m_movedThisActionStep; }
+    void setMovedThisActionStep(bool v) { m_movedThisActionStep = v; }
+
 protected:
     void mouseReleaseEvent(QGraphicsSceneMouseEvent* e) override;
     void contextMenuEvent(QGraphicsSceneContextMenuEvent* e) override;
@@ -56,11 +59,6 @@ private:
     RegionItem* m_regionItem = nullptr; // 当前所在格（没有则 nullptr）
     Side m_side = Side::Unknown;    // 你 setUnitMeta 时保存的阵营
 
-public:
-    bool movedThisActionStep() const { return m_movedThisActionStep; }
-    void setMovedThisActionStep(bool v) { m_movedThisActionStep = v; }
-
-private:
     bool m_movedThisActionStep = false;
 
 signals:

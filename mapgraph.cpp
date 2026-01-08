@@ -91,7 +91,7 @@ int MapGraph::shortestDistance(int src, int dst, const QSet<int>& blocked) const
     if (blocked.contains(dst)) return -1; // dst 在 blocked => 一定不可达
 
     const int INF = std::numeric_limits<int>::max()/4;
-    QVector<int> dist(adj.size(), INF);
+    QList<int> dist(adj.size(), INF);
 
     using Node = QPair<int,int>; // (dist, v)
     std::priority_queue<Node, std::vector<Node>, std::greater<Node>> pq;

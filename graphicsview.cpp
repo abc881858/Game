@@ -83,7 +83,7 @@ void GraphicsView::dropEvent(QDropEvent *e)
 
     QPointF scenePos = mapToScene(e->position().toPoint());
 
-    emit dropRequested(scenePos, pixPath, eventId, isEvent);
+    emit dropPieceToScene(scenePos, pixPath, eventId, isEvent);
 
     e->setDropAction(Qt::MoveAction);
     e->accept();
