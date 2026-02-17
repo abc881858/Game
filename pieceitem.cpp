@@ -51,11 +51,8 @@ void PieceItem::contextMenuEvent(QGraphicsSceneContextMenuEvent* e)
         return;
     }
 
-    QGraphicsScene* sc = scene();
-    if (!sc) { e->ignore(); return; }
-
     RegionItem* regionItem = nullptr;
-    for (auto* it : sc->items()) {
+    for (auto* it : scene()->items()) {
         if (it->type() != RegionType) continue;
         auto* s = static_cast<RegionItem*>(it);
         if (s->id() == m_regionId) { regionItem = s; break; }

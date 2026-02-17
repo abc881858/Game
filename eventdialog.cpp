@@ -18,11 +18,11 @@ protected:
         if (!it) return;
 
         const int srcRow = row(it);
-        const QString eventId = it->data(Qt::UserRole + 1).toString();
+        // const QString eventId = it->data(Qt::UserRole + 1).toString();
         const QString pixPath = it->data(Qt::UserRole).toString();
 
         auto *mime = new QMimeData;
-        mime->setData(DragDrop::MimeEventPiece, DragDrop::packEventPiece(eventId, pixPath).toUtf8());
+        mime->setData(DragDrop::MimeEventPiece, pixPath.toUtf8());
 
         QDrag drag(this);
         drag.setMimeData(mime);
@@ -74,9 +74,4 @@ void EventDialog::addEventPiece(const QString& name, const QString& pixResPath, 
         it->setData(Qt::UserRole + 1, m_eventId);
         list->addItem(it);
     }
-}
-
-void EventDialog::onEventPiecePlaced(const QString& eventId, const QString& pixPath, int)
-{
-    if (eventId != m_eventId) return;
 }

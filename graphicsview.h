@@ -23,5 +23,6 @@ private:
     GraphicsFrame *m_graphicsFrame = nullptr;
 
 signals:
-    void dropPieceToScene(QPointF scenePos, QString pixPath, QString eventId, bool isEvent);
+    void dropPieceToScene(QPointF scenePos, QString pixPath);
+    void dropEventPieceToScene(QPointF scenePos, QString pixPath);
 };

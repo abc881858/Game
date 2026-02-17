@@ -8,11 +8,6 @@
 #include "strikegroupdialog.h"
 #include "battlefielddialog.h"
 
-static inline bool isActionTokenPath(const QString& pixPath)
-{
-    return pixPath.contains("_XDQ", Qt::CaseSensitive);
-}
-
 GameController::GameController(QGraphicsScene* scene, QObject* parent)
     : QObject(parent)
     , m_scene(scene)
@@ -86,87 +81,45 @@ GameController::GameController(QGraphicsScene* scene, QObject* parent)
     refreshMovablePieces();
 }
 
-PieceItem* GameController::createPieceToRegion(int regionId, const QString& pixPath, const QString& /*eventId*/, bool isEvent)
+PieceItem* GameController::createPieceToRegion(int regionId, const QString& pixPath)
 {
     // 行动签不生成棋子
-    if (isActionTokenPath(pixPath)) return nullptr;
+    if (pixPath.contains("_XDQ", Qt::CaseSensitive)) return nullptr;
 
-    if (isEvent && !m_eventAllowedRegions.contains(regionId)) {
-        emit logLine(QString("事件落子失败：region %1 不在允许列表").arg(regionId), Qt::black, true);
-        return nullptr;
-    }
+    // if (!m_eventAllowedRegions.isEmpty()) {
+    //     if (!m_eventAllowedRegions.contains(regionId)) {
+    //         emit logLine(QString("事件落子失败：region %1 不在允许列表").arg(regionId), Qt::black, true);
+    //         return nullptr;
+    //     }
+    // }
 
-    // ===== 战斗：打击群投入阶段 =====
-    if (m_battle.active && m_battleStep == BattleStep::SetupStrike) {
-        // 只有轮到的一方能投入
-        if (m_actionStep.activeSide == Side::Unknown) {} // 不依赖行动步骤也行
-        if (m_strikeTurn == Side::Unknown) return nullptr;
+    PieceItem* item = new PieceItem(QPixmap(pixPath));
 
-        // 过滤兵团（兵团不走这里，兵团靠拖进敌占区触发）
-        Side s;
-        int lvl;
-        if (parseCorpsFromPixPath(pixPath, s, lvl)) {
-            emit logLine("当前是打击群投入阶段：请拖入打击群（飞机等），不是兵团。\n", Qt::black, true);
-            return nullptr;
-        }
-
-        // 必须把打击群拖到战斗区（同一个 region）
-        if (regionId != m_battle.battleRegionId) {
-            emit logLine("打击群投入失败：请拖到当前战斗区。\n", Qt::black, true);
-            return nullptr;
-        }
-
-        // 判定精锐绑定
-        bool elite = pixPath.contains("JR", Qt::CaseInsensitive);
-        bool bind = false;
-        if (elite) {
-            auto r = QMessageBox::question(nullptr, "精锐", "检测到精锐单位，是否绑定精锐？", QMessageBox::Yes|QMessageBox::No);
-            bind = (r == QMessageBox::Yes);
-        }
-
-        StrikeGroupEntry e{pixPath, bind};
-
-        if (m_strikeTurn == m_battle.attacker) {
-            m_battle.strikeA.push_back(e);
-            m_strikeAtkPassed = false; // 一旦投入，撤销 pass
-        } else {
-            m_battle.strikeD.push_back(e);
-            m_strikeDefPassed = false;
-        }
-
-        emit logLine(QString("打击群投入：%1 -> region %2\n").arg(pixPath).arg(regionId), Qt::black, true);
-
-        // 投入后切换回合
-        m_strikeTurn = (m_strikeTurn == m_battle.attacker) ? m_battle.defender : m_battle.attacker;
-        emit strikeGroupsChanged(m_battle.strikeA, m_battle.strikeD, m_strikeTurn, false);
-        return nullptr;
-    }
-
-    PieceItem* item = new PieceItem(pixPath);
-    connect(item, &PieceItem::splitRequested, this, &GameController::splitPieceToRegion);
-    connect(item, &PieceItem::dropReleased, this, &GameController::movePieceToRegion);
     Side side;
     int lvl;
     if (parseCorpsFromPixPath(pixPath, side, lvl)) {
         item->setUnitMeta(PieceKind::Corps, side, lvl, pixPath);
     } else if (parseFortressFromPixPath(pixPath, side, lvl)) {
         item->setUnitMeta(PieceKind::Fortress, side, lvl, pixPath);
-    } else if (parseFortressFromPixPath(pixPath, side, lvl)) {
-        item->setUnitMeta(PieceKind::Fortress, side, lvl, pixPath);
+    } else if (parseFortificationFromPixPath(pixPath, side, lvl)) {
+        item->setUnitMeta(PieceKind::Fortification, side, lvl, pixPath);
     } else {
         item->setUnitMeta(PieceKind::Other, Side::Unknown, 0, pixPath);
     }
-    item->setZValue(20.0);
     m_scene->addItem(item);
 
+    connect(item, &PieceItem::splitRequested, this, &GameController::splitPieceToRegion);
+    connect(item, &PieceItem::dropReleased, this, &GameController::movePieceToRegion);
+
     m_placementManager->movePieceToRegion(item, regionId);
+    item->setRegionId(regionId);
+
     item->markLastValid(regionId);
 
-    // 如果这是兵团/要塞，且该 region 没写过 owner，则用该单位阵营初始化
-    if (item->kind() == PieceKind::Corps || item->kind() == PieceKind::Fortress) {
+    if ((item->kind() == PieceKind::Corps || item->kind() == PieceKind::Fortress) && item->side() != Side::Unknown)
+    {
         if (!m_owner.contains(regionId) || m_owner.value(regionId) == Side::Unknown) {
-            if (item->side() != Side::Unknown)
-                m_owner[regionId] = item->side();
+            m_owner[regionId] = item->side();
         }
     }
 
@@ -386,14 +339,12 @@ void GameController::setFirstPlayerS()
     emit logLine(QString("先手确定：苏联先打出行动签。\n"), Qt::black, true);
 }
 
-void GameController::dropPieceToScene(QPointF scenePos, QString pixPath, QString eventId, bool isEvent)
+void GameController::dropPieceToScene(QPointF scenePos, QString pixPath)
 {
-    if (pixPath.isEmpty()) return;
-
     // 行动签
     if (pixPath.contains("_XDQ", Qt::CaseSensitive)) {
         if (m_scene->sceneRect().contains(scenePos)) {
-            if (!isActionTokenPath(pixPath)) return;
+            if (!(pixPath.contains("_XDQ", Qt::CaseSensitive))) return;
 
             // 行动步骤中不处理行动签
             if (m_actionStep.active) return;
@@ -428,18 +379,17 @@ void GameController::dropPieceToScene(QPointF scenePos, QString pixPath, QString
         return;
     }
 
-    // 普通/事件：必须命中 region
     int regionId = -1;
     QList<QGraphicsItem *> items = m_scene->items(scenePos, Qt::IntersectsItemShape, Qt::DescendingOrder);
     for (QGraphicsItem* it : items) {
         if (it->type() == RegionType) {
             regionId = static_cast<RegionItem*>(it)->id();
+            break;
         }
     }
-
     if (regionId < 0) return;
 
-    createPieceToRegion(regionId, pixPath, eventId, isEvent);
+    createPieceToRegion(regionId, pixPath);
 }
 
 void GameController::splitPieceToRegion(PieceItem* piece, int a, int b)
@@ -460,8 +410,8 @@ void GameController::splitPieceToRegion(PieceItem* piece, int a, int b)
 
     // 3) 生成两个新兵团并放回同城
     auto spawnOne = [&](int lvl){
-        const QString path = corpsPixPath(side, lvl);
-        createPieceToRegion(regionId, path);
+        const QString pixPath = corpsPixPath(side, lvl);
+        createPieceToRegion(regionId, pixPath);
     };
 
     spawnOne(a);

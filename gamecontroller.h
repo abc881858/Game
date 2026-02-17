@@ -45,7 +45,7 @@ class GameController : public QObject
     Q_OBJECT
 public:
     explicit GameController(QGraphicsScene* scene, QObject* parent=nullptr);
-    PieceItem* createPieceToRegion(int regionId, const QString& pixPath, const QString& eventId = QString(), bool isEvent = false);
+    PieceItem* createPieceToRegion(int regionId, const QString& pixPath);
     const GameState& gameState() const { return m_gameState; }
     void setTurn(int turn);
     void addNationalPower(Side side, int delta);
@@ -93,7 +93,7 @@ public slots:
     void refreshMovablePieces();
     void setFirstPlayerD();
     void setFirstPlayerS();
-    void dropPieceToScene(QPointF scenePos, QString pixPath, QString eventId, bool isEvent);
+    void dropPieceToScene(QPointF scenePos, QString pixPath);
     void splitPieceToRegion(PieceItem* piece, int a, int b);
     void movePieceToRegion(PieceItem *piece, const QPointF &sceneCenter);
 

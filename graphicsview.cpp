@@ -57,8 +57,6 @@ void GraphicsView::dragLeaveEvent(QDragLeaveEvent *e)
 
 void GraphicsView::dropEvent(QDropEvent *e)
 {
-    if (!scene()) { QGraphicsView::dropEvent(e); return; }
-
     const bool isNormal = e->mimeData()->hasFormat(DragDrop::MimePiece);
     const bool isEvent  = e->mimeData()->hasFormat(DragDrop::MimeEventPiece);
 
@@ -67,23 +65,16 @@ void GraphicsView::dropEvent(QDropEvent *e)
         return;
     }
 
-    QString eventId;
-    QString pixPath;
     if (isNormal) {
-        pixPath = QString::fromUtf8(e->mimeData()->data(DragDrop::MimePiece));
-    } else {
-        const QString payload = QString::fromUtf8(e->mimeData()->data(DragDrop::MimeEventPiece));
-        if (!DragDrop::unpackEventPiece(payload, eventId, pixPath)) {
-            e->ignore();
-            return;
-        }
+        QString pixPath = QString::fromUtf8(e->mimeData()->data(DragDrop::MimePiece));
+        QPointF scenePos = mapToScene(e->position().toPoint());
+        emit dropPieceToScene(scenePos, pixPath);
     }
-
-    if (pixPath.isEmpty()) { e->ignore(); return; }
-
-    QPointF scenePos = mapToScene(e->position().toPoint());
-
-    emit dropPieceToScene(scenePos, pixPath, eventId, isEvent);
+    if (isEvent) {
+        QString pixPath = QString::fromUtf8(e->mimeData()->data(DragDrop::MimeEventPiece));
+        QPointF scenePos = mapToScene(e->position().toPoint());
+        emit dropEventPieceToScene(scenePos, pixPath);
+    }
 
     e->setDropAction(Qt::MoveAction);
     e->accept();
