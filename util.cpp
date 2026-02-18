@@ -16,8 +16,6 @@ bool parseCorpsFromPixPath(const QString& pixPath, Side& side, int& level)
 
     if (s == "D") side = Side::D;
     else if (s == "S") side = Side::S;
-    else if (s == "L") side = Side::L;
-    else side = Side::Unknown;
 
     return level >= 1 && level <= 4;
 }
@@ -33,8 +31,6 @@ bool parseFortressFromPixPath(const QString& pixPath, Side& side, int& level)
 
     if (s == "D") side = Side::D;
     else if (s == "S") side = Side::S;
-    else if (s == "L") side = Side::L;
-    else side = Side::Unknown;
 
     return level >= 1 && level <= 4;
 }
@@ -50,14 +46,12 @@ bool parseFortificationFromPixPath(const QString& pixPath, Side& side, int& leve
 
     if (s == "D") side = Side::D;
     else if (s == "S") side = Side::S;
-    else if (s == "L") side = Side::L;
-    else side = Side::Unknown;
 
     return level >= 1 && level <= 4;
 }
 
 QString corpsPixPath(Side side, int level)
 {
-    const char* s = (side==Side::D ? "D" : side==Side::S ? "S" : side==Side::L ? "L" : "");
+    const char* s = (side==Side::D ? "D" : "S");
     return QString(":/%1/%1_%2JBT.png").arg(s).arg(level);
 }

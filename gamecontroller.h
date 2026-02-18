@@ -35,7 +35,7 @@ enum class ActionSegment { Move=0, Battle=1, Redeploy=2, Prepare=3, Supply=4 };
 
 struct ActionStepState {
     bool active = false;
-    Side activeSide = Side::Unknown;
+    Side activeSide;
     ActionSegment segment = ActionSegment::Move;
     int segmentIndex = 0; // 0,1,2,3,4
 };
@@ -72,12 +72,12 @@ private:
     ActionStepState m_actionStep;
     QGraphicsScene* m_scene = nullptr;
     PlacementManager* m_placementManager = nullptr;
-    Side m_nextActionTokenSide = Side::Unknown;
+    Side m_nextActionTokenSide;
 
 
     // 打击群轮流
     BattleContext m_battle;
-    Side m_strikeTurn = Side::Unknown;
+    Side m_strikeTurn;
     bool m_strikeAtkPassed = false;
     bool m_strikeDefPassed = false;
     void tryStartBattleFromMove(PieceItem* piece, int from, int to);

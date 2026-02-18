@@ -5,8 +5,6 @@
 static QString sideName2(Side s){
     if (s==Side::D) return "德国";
     if (s==Side::S) return "苏联";
-    if (s==Side::L) return "仆从";
-    return "未知";
 }
 
 static void fillStrike(QListWidget* lw, const QList<StrikeGroupEntry>& v)

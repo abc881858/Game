@@ -4,8 +4,6 @@
 #include <QGraphicsPixmapItem>
 #include "util.h"
 
-inline constexpr int PieceType = QGraphicsItem::UserType + 200;
-
 class RegionItem;
 
 class PieceItem : public QObject, public QGraphicsPixmapItem
@@ -52,12 +50,11 @@ private:
     int m_lastValidRegionId = -1;
     QPointF m_lastValidPos;
 
-    PieceKind m_kind = PieceKind::Other;
+    PieceKind m_kind;
     int m_level = 0;
     QString m_pixPath;
 
-    RegionItem* m_regionItem = nullptr; // 当前所在格（没有则 nullptr）
-    Side m_side = Side::Unknown;    // 你 setUnitMeta 时保存的阵营
+    Side m_side;    // 你 setUnitMeta 时保存的阵营
 
     bool m_movedThisActionStep = false;
 

@@ -16,8 +16,8 @@ struct BattleContext
     bool active = false;
     int battleRegionId = -1;
 
-    Side attacker = Side::Unknown;
-    Side defender = Side::Unknown;
+    Side attacker;
+    Side defender;
 
     QList<PieceItem*> attackers;   // 参战兵团（棋子指针）
     QList<PieceItem*> defenders;

@@ -12,10 +12,7 @@ RegionItem::RegionItem(int id, const QRectF &regionRect)
     setFlag(QGraphicsItem::ItemIsSelectable, false);
 }
 
-int RegionItem::type() const
-{
-    return RegionType;
-}
+
 
 int RegionItem::id() const
 {

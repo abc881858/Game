@@ -103,8 +103,6 @@ PieceItem* GameController::createPieceToRegion(int regionId, const QString& pixP
         item->setUnitMeta(PieceKind::Fortress, side, lvl, pixPath);
     } else if (parseFortificationFromPixPath(pixPath, side, lvl)) {
         item->setUnitMeta(PieceKind::Fortification, side, lvl, pixPath);
-    } else {
-        item->setUnitMeta(PieceKind::Other, Side::Unknown, 0, pixPath);
     }
     m_scene->addItem(item);
 
@@ -116,9 +114,9 @@ PieceItem* GameController::createPieceToRegion(int regionId, const QString& pixP
 
     item->markLastValid(regionId);
 
-    if ((item->kind() == PieceKind::Corps || item->kind() == PieceKind::Fortress) && item->side() != Side::Unknown)
+    if ((item->kind() == PieceKind::Corps || item->kind() == PieceKind::Fortress))
     {
-        if (!m_owner.contains(regionId) || m_owner.value(regionId) == Side::Unknown) {
+        if (!m_owner.contains(regionId)) {
             m_owner[regionId] = item->side();
         }
     }
@@ -138,7 +136,6 @@ void GameController::refreshMovablePieces()
         bool movable =
             m_actionStep.active &&
             ( (m_actionStep.segment == ActionSegment::Move) || (m_actionStep.segment == ActionSegment::Battle) ) &&
-            (side != Side::Unknown) &&
             (p->kind() == PieceKind::Corps) &&
             (p->side() == side);
 
@@ -225,7 +222,6 @@ int GameController::currentAP(Side side) const
 
 void GameController::startActionStep(Side side)
 {
-    if (side == Side::Unknown) return;
     if (m_actionStep.active) return;// 如果已经在行动步骤：一般不允许再次 start
 
     m_actionStep.active = true;
@@ -257,14 +253,13 @@ void GameController::endActionStep()
 
     clearAP(finishedSide);
 
-    Side nextSide = Side::Unknown;
+    Side nextSide;
     if (finishedSide == Side::D) nextSide = Side::S;
     else if (finishedSide == Side::S) nextSide = Side::D;
 
     m_nextActionTokenSide = nextSide;
 
     m_actionStep.active = false;
-    m_actionStep.activeSide = Side::Unknown;
     m_actionStep.segmentIndex = 0;
     m_actionStep.segment = ActionSegment::Move;
 
@@ -349,11 +344,9 @@ void GameController::dropPieceToScene(QPointF scenePos, QString pixPath)
             // 行动步骤中不处理行动签
             if (m_actionStep.active) return;
 
-            Side side = Side::Unknown;
+            Side side;
             if (pixPath.startsWith(":/D/")) side = Side::D;
             else if (pixPath.startsWith(":/S/")) side = Side::S;
-
-            if (side == Side::Unknown) return;
 
             // ✅ 只允许轮到的那方打签
             if (side != m_nextActionTokenSide) {
@@ -485,8 +478,8 @@ void GameController::movePieceToRegion(PieceItem* piece, const QPointF& sceneCen
 
     // ====== 1) 陆战环节：拖进敌占区 => 发起/加入战斗 ======
     if (m_actionStep.active && (m_actionStep.segment == ActionSegment::Battle)) {
-        Side owner = m_owner.value(toRegionId, Side::Unknown);
-        if (owner != Side::Unknown && owner != piece->side()) {
+        Side owner = m_owner.value(toRegionId);
+        if (owner != piece->side()) {
             // 1) 距离 N（宣战不走“blocked”限制的话就给空集合）
             QSet<int> blocked;
             int distance = m_graph.shortestDistance(fromRegionId, toRegionId, blocked);
@@ -588,14 +581,11 @@ void GameController::movePieceToRegion(PieceItem* piece, const QPointF& sceneCen
     addAP(piece->side(), -cost);
 
     // 占领判定：如果进入敌占格，则占领并锁住本阶段继续移动
-    Side owner = m_owner.value(toRegionId, Side::Unknown);
-    if (owner != Side::Unknown && owner != piece->side()) {
+    Side owner = m_owner.value(toRegionId);
+    if (owner != piece->side()) {
         m_owner[toRegionId] = piece->side();
         piece->setMovedThisActionStep(true);
         emit logLine("进入敌占格：占领完成，本行动步骤该兵团不能继续移动。\n", Qt::black, true);
-    } else if (owner == Side::Unknown) {
-        // 没维护过占领方时，至少写入当前方
-        m_owner[toRegionId] = piece->side();
     }
 
     // 这次移动成功，更新 lastValid
@@ -649,14 +639,10 @@ void GameController::syncBattleUnitsToDialog() {
 void GameController::tryStartBattleFromMove(PieceItem* piece, int from, int to)
 {
     // 防守方=该格现有兵团所属（取第一个敌方兵团）
-    Side defSide = Side::Unknown;
+    Side defSide;
     auto defPieces = m_placementManager->piecesInRegion(to);
     for (auto* p : defPieces) {
         if (p && p->kind()==PieceKind::Corps && p->side()!=piece->side()) { defSide = p->side(); break; }
-    }
-    if (defSide == Side::Unknown) {
-        rollbackPieceToRegion(piece, from, "该敌占区没有可识别的守军，已回滚。\n");
-        return;
     }
 
     // 如果当前没有战斗：创建战斗上下文

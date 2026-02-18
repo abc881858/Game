@@ -15,6 +15,6 @@ public:
 protected:
     void startDrag(Qt::DropActions supportedActions) override;
 private:
-    Side m_side = Side::Unknown;
+    Side m_side;
     GameController* m_controller = nullptr;
 };

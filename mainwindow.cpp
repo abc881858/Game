@@ -24,6 +24,15 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
 
+    m_segmentWidget = new SegmentWidget(this);
+    m_segmentWidget->setBottomText(QStringList() << "陆上移动" << "陆战" << "调动" << "准备" << "补给");
+    m_segmentWidget->setCurrentSegment(0);
+
+    ui->toolBar->addWidget(m_segmentWidget);
+    ui->toolBar->addAction(ui->action_End);
+    ui->toolBar->addAction(ui->action_DTZ);
+    ui->toolBar->addAction(ui->action_STZ);
+
     ui->D->setCurrentIndex(0);
     ui->S->setCurrentIndex(0);
 
@@ -79,15 +88,6 @@ void MainWindow::initScene()
 
 void MainWindow::initControllers()
 {
-    m_segmentWidget = new SegmentWidget(this);
-    m_segmentWidget->setBottomText(QStringList() << "陆上移动" << "陆战" << "调动" << "准备" << "补给");
-    m_segmentWidget->setCurrentSegment(0);
-
-    ui->toolBar->addWidget(m_segmentWidget);
-    ui->toolBar->addAction(ui->action_End);
-    ui->toolBar->addAction(ui->action_DTZ);
-    ui->toolBar->addAction(ui->action_STZ);
-
     m_gameController = new GameController(scene, this);
 
     connect(ui->action_Event1, &QAction::triggered, this, &MainWindow::actionEvent1);
@@ -99,8 +99,6 @@ void MainWindow::initControllers()
 
     connect(m_graphicsView, &GraphicsView::dropPieceToScene, m_gameController, &GameController::dropPieceToScene);
     connect(m_graphicsView, &GraphicsView::dropEventPieceToScene, m_gameController, &GameController::dropPieceToScene);
-
-    connect(m_gameController, &GameController::setCurrentSegment, m_segmentWidget, &SegmentWidget::setCurrentSegment);
 
     connect(m_gameController, &GameController::logLine, this, &MainWindow::appendLog);
     connect(m_gameController, &GameController::stateChanged, this, &MainWindow::refreshStatusUI);
@@ -352,6 +350,8 @@ void MainWindow::actionRollDiceS()
 void MainWindow::setCurrentSegment(int currentSegment)
 {
     ui->action_End->setDisabled(currentSegment == 0);
+
+    m_segmentWidget->setCurrentSegment(currentSegment);
 }
 
 void MainWindow::refreshStatusUI()

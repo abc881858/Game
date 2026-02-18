@@ -25,8 +25,8 @@ private:
     QListWidget* m_atk{};
     QListWidget* m_def{};
     QPushButton* m_pass{};
-    Side m_atkSide = Side::Unknown;
-    Side m_defSide = Side::Unknown;
+    Side m_atkSide;
+    Side m_defSide;
 
 signals:
     void passClicked();

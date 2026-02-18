@@ -20,7 +20,7 @@ private:
     QListWidget* m_atkList{};
     QListWidget* m_defList{};
     QPushButton* m_ok{};
-    Side m_atk = Side::Unknown;
-    Side m_def = Side::Unknown;
+    Side m_atk;
+    Side m_def;
     int  m_rid = -1;
 };
