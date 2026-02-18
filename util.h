@@ -8,46 +8,39 @@
 inline constexpr int RegionType = QGraphicsItem::UserType + 100;
 inline constexpr int PieceType = QGraphicsItem::UserType + 200;
 
-namespace DragDrop {
-inline constexpr const char* MimePiece      = "application/x-piece";
-inline constexpr const char* MimeEventPiece = "application/x-event-piece";
-}
+inline constexpr const char* MimeListPiece   = "application/x-list-piece";
+inline constexpr const char* MimeListToken   = "application/x-list-token";
+inline constexpr const char* MimeDialogPiece = "application/x-event-piece";
 
 enum class Side { D, S };
 
 //陆地格枚举值
-
-enum class Terrain       //地形
-{
-    Plain,               //平原
-    Swamp,               //沼泽
-    Mountain             //山脉
+enum class Terrain {     // 地形
+    Plain,               // 平原
+    Swamp,               // 沼泽
+    Mountain             // 山脉
 };
 
 //棋子枚举值
-enum class Nation        //国家
-{
-    Germany,             //德国
-    Italy,               //意大利
-    Romania,             //罗马尼亚
-    Hungary,             //匈牙利
-    SovietUnion,         //苏联
-    SovietGuards         //苏联近卫
+enum class Nation {      // 国家
+    Germany,             // 德国
+    Italy,               // 意大利
+    Romania,             // 罗马尼亚
+    Hungary,             // 匈牙利
+    Soviet,              // 苏联
+    SovietGuards         // 苏联近卫
 };
 
-enum class PieceKind     //棋子种类
-{
-    Corps,               //兵团
-    Fortress,            //要塞
-    StrikeGroup,         //打击群
-    Elite,               //精锐
-    Fortification,       //防御工事
-    TerrainObstacle,     //地形障碍
-    ActionToken          //行动签
+enum class PieceKind {   // 棋子种类
+    Corps,               // 兵团
+    Fortress,            // 要塞
+    StrikeGroup,         // 打击群
+    Elite,               // 精锐
+    Fortification,       // 防御工事
+    TerrainObstacle,     // 地形障碍
 };
 
-enum class TurnPhase
-{
+enum class TurnPhase {   // 回合步骤
     EventPhase,          // 事件步骤
     ActionPhase,         // 行动步骤
     BombardmenPhaset,    // 轰炸步骤

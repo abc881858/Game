@@ -98,7 +98,6 @@ void MainWindow::initControllers()
     connect(ui->action_S, &QAction::triggered, m_gameController, &GameController::setFirstPlayerS);
 
     connect(m_graphicsView, &GraphicsView::dropPieceToScene, m_gameController, &GameController::dropPieceToScene);
-    connect(m_graphicsView, &GraphicsView::dropEventPieceToScene, m_gameController, &GameController::dropPieceToScene);
 
     connect(m_gameController, &GameController::logLine, this, &MainWindow::appendLog);
     connect(m_gameController, &GameController::stateChanged, this, &MainWindow::refreshStatusUI);

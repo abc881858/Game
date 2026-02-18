@@ -13,50 +13,120 @@ GameController::GameController(QGraphicsScene* scene, QObject* parent)
     , m_scene(scene)
     , m_placementManager(new PlacementManager(this))
 {
-    // ======= 城市格子矩形表 =======
-    const auto regionRects = QList<QRectF>{
-        QRectF(972.46, 1166.95, 198.72, 209.29),  //挪威北部 0 D
-        QRectF(1310.70, 1169.06, 198.72, 211.40), //芬兰北部 1 D
-        QRectF(1593.98, 1179.63, 200.83, 211.40), //摩尔曼斯克 2 S
-        QRectF(1448.11, 1443.89, 198.72, 202.95), //卡累利阿 3 S
-        QRectF(1995.65, 1422.75, 202.95, 205.06), //阿尔汉格尔斯克 4 S
-        QRectF(2382.52, 1585.53, 205.06, 207.18), //基洛夫 5 S
-        QRectF(1308.59, 1722.94, 198.72, 202.95), //列宁格勒 6 S
-        QRectF(1581.30, 1687.00, 198.72, 205.06), //季赫温 7 S
-        QRectF(1851.90, 1714.48, 200.83, 205.06), //雅罗斯拉夫尔 8 S
-        QRectF(2097.12, 1866.69, 205.06, 200.83), //高尔基 9 S
-        QRectF(2367.72, 1862.47, 205.06, 198.72), //喀山 10 S
-        QRectF(1031.65, 1980.85, 200.83, 207.18), //波罗的海国家 11 S
-        QRectF(1369.90, 2016.79, 200.83, 207.18), //斯摩棱斯克 12 S
-        QRectF(1701.80, 1978.74, 196.61, 207.18), //莫斯科 13 S
-        QRectF(731.46, 2130.95, 200.83, 200.83),  //东普鲁士 14 D
-        QRectF(710.87, 2399.38, 201.59, 204.62),  //波兰北部 15 D
-        QRectF(1097.18, 2257.79, 196.61, 202.95), //白俄罗斯 16 S
-        QRectF(1498.85, 2270.47, 198.72, 202.95), //布良斯克 17 S
-        QRectF(1972.40, 2285.27, 202.95, 205.06), //沃洛涅日 18 S
-        QRectF(2352.92, 2390.97, 205.06, 205.06), //萨拉托夫 19 S
-        QRectF(1706.03, 2500.90, 198.72, 207.18), //哈尔科夫 20 S
-        QRectF(735.68, 2691.17, 200.83, 200.83),  //波兰南部 21 D
-        QRectF(1021.08, 2619.29, 200.83, 200.83), //利沃夫 22 S
-        QRectF(1302.25, 2564.33, 200.83, 202.95), //基辅 23 S
-        QRectF(2196.48, 2651.00, 209.29, 209.29), //斯大林格勒 24 S
-        QRectF(1593.98, 2765.16, 200.83, 202.95), //第聂伯罗彼得罗夫斯克 25 S
-        QRectF(1881.49, 2784.19, 202.95, 207.18), //斯大林诺 26 S
-        QRectF(2426.91, 2866.63, 205.06, 205.06), //阿斯特拉罕 27 S
-        QRectF(1342.41, 2898.34, 198.72, 205.06), //敖德萨 28 S
-        QRectF(703.97, 3023.07, 198.72, 202.95),  //南斯拉夫 29 D
-        QRectF(1107.75, 3063.24, 198.72, 207.18), //罗马尼亚 30 D
-        QRectF(1613.01, 3088.61, 200.83, 205.06), //克里米亚 31 S
-        QRectF(2251.45, 3090.72, 207.18, 207.18), //格罗兹尼 32 S
-        QRectF(1961.83, 3232.36, 205.06, 211.40), //巴统 33 S
-        QRectF(2401.54, 3409.94, 205.06, 205.06), //巴库 34 S
+    // ======= 城市格子 =======
+    auto addRegion = [&](int id, const QRectF& rc, Nation occ) {
+        auto* r = new RegionItem(id, rc);
+        r->occupy = occ;
+        m_scene->addItem(r);
+        m_placementManager->addRegionItem(r);
+        return r;
     };
 
-    for (int i = 0; i < regionRects.size(); ++i) {
-        auto *regionItem = new RegionItem(i, regionRects[i]);
-        m_scene->addItem(regionItem);
-        m_placementManager->addRegionItem(regionItem);
-    }
+    // 挪威北部 0 D
+    addRegion(0, QRectF(972.46, 1166.95, 198.72, 209.29), Nation::Germany);
+
+    // 芬兰北部 1 D
+    addRegion(1, QRectF(1310.70, 1169.06, 198.72, 211.40), Nation::Germany);
+
+    // 摩尔曼斯克 2 S
+    addRegion(2, QRectF(1593.98, 1179.63, 200.83, 211.40), Nation::Soviet);
+
+    // 卡累利阿 3 S
+    addRegion(3, QRectF(1448.11, 1443.89, 198.72, 202.95), Nation::Soviet);
+
+    // 阿尔汉格尔斯克 4 S
+    addRegion(4, QRectF(1995.65, 1422.75, 202.95, 205.06), Nation::Soviet);
+
+    // 基洛夫 5 S
+    addRegion(5, QRectF(2382.52, 1585.53, 205.06, 207.18), Nation::Soviet);
+
+    // 列宁格勒 6 S
+    addRegion(6, QRectF(1308.59, 1722.94, 198.72, 202.95), Nation::Soviet);
+
+    // 季赫温 7 S
+    addRegion(7, QRectF(1581.30, 1687.00, 198.72, 205.06), Nation::Soviet);
+
+    // 雅罗斯拉夫尔 8 S
+    addRegion(8, QRectF(1851.90, 1714.48, 200.83, 205.06), Nation::Soviet);
+
+    // 高尔基 9 S
+    addRegion(9, QRectF(2097.12, 1866.69, 205.06, 200.83), Nation::Soviet);
+
+    // 喀山 10 S
+    addRegion(10, QRectF(2367.72, 1862.47, 205.06, 198.72), Nation::Soviet);
+
+    // 波罗的海国家 11 S
+    addRegion(11, QRectF(1031.65, 1980.85, 200.83, 207.18), Nation::Soviet);
+
+    // 斯摩棱斯克 12 S
+    addRegion(12, QRectF(1369.90, 2016.79, 200.83, 207.18), Nation::Soviet);
+
+    // 莫斯科 13 S
+    addRegion(13, QRectF(1701.80, 1978.74, 196.61, 207.18), Nation::Soviet);
+
+    // 东普鲁士 14 D
+    addRegion(14, QRectF(731.46, 2130.95, 200.83, 200.83), Nation::Germany);
+
+    // 波兰北部 15 D
+    addRegion(15, QRectF(710.87, 2399.38, 201.59, 204.62), Nation::Germany);
+
+    // 白俄罗斯 16 S
+    addRegion(16, QRectF(1097.18, 2257.79, 196.61, 202.95), Nation::Soviet);
+
+    // 布良斯克 17 S
+    addRegion(17, QRectF(1498.85, 2270.47, 198.72, 202.95), Nation::Soviet);
+
+    // 沃洛涅日 18 S
+    addRegion(18, QRectF(1972.40, 2285.27, 202.95, 205.06), Nation::Soviet);
+
+    // 萨拉托夫 19 S
+    addRegion(19, QRectF(2352.92, 2390.97, 205.06, 205.06), Nation::Soviet);
+
+    // 哈尔科夫 20 S
+    addRegion(20, QRectF(1706.03, 2500.90, 198.72, 207.18), Nation::Soviet);
+
+    // 波兰南部 21 D
+    addRegion(21, QRectF(735.68, 2691.17, 200.83, 200.83), Nation::Germany);
+
+    // 利沃夫 22 S
+    addRegion(22, QRectF(1021.08, 2619.29, 200.83, 200.83), Nation::Soviet);
+
+    // 基辅 23 S
+    addRegion(23, QRectF(1302.25, 2564.33, 200.83, 202.95), Nation::Soviet);
+
+    // 斯大林格勒 24 S
+    addRegion(24, QRectF(2196.48, 2651.00, 209.29, 209.29), Nation::Soviet);
+
+    // 第聂伯罗彼得罗夫斯克 25 S
+    addRegion(25, QRectF(1593.98, 2765.16, 200.83, 202.95), Nation::Soviet);
+
+    // 斯大林诺 26 S
+    addRegion(26, QRectF(1881.49, 2784.19, 202.95, 207.18), Nation::Soviet);
+
+    // 阿斯特拉罕 27 S
+    addRegion(27, QRectF(2426.91, 2866.63, 205.06, 205.06), Nation::Soviet);
+
+    // 敖德萨 28 S
+    addRegion(28, QRectF(1342.41, 2898.34, 198.72, 205.06), Nation::Soviet);
+
+    // 南斯拉夫 29 D
+    addRegion(29, QRectF(703.97, 3023.07, 198.72, 202.95), Nation::Germany);
+
+    // 罗马尼亚 30 D
+    addRegion(30, QRectF(1107.75, 3063.24, 198.72, 207.18), Nation::Germany);
+
+    // 克里米亚 31 S
+    addRegion(31, QRectF(1613.01, 3088.61, 200.83, 205.06), Nation::Soviet);
+
+    // 格罗兹尼 32 S
+    addRegion(32, QRectF(2251.45, 3090.72, 207.18, 207.18), Nation::Soviet);
+
+    // 巴统 33 S
+    addRegion(33, QRectF(1961.83, 3232.36, 205.06, 211.40), Nation::Soviet);
+
+    // 巴库 34 S
+    addRegion(34, QRectF(2401.54, 3409.94, 205.06, 205.06), Nation::Soviet);
+
 
     createPieceToRegion(1,  ":/D/D_2JBT.png"); // 挪威北部
     createPieceToRegion(2,  ":/S/S_2JBT.png"); // 摩尔曼斯克

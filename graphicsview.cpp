@@ -45,27 +45,44 @@ void GraphicsView::wheelEvent(QWheelEvent *e)
 
 void GraphicsView::dragEnterEvent(QDragEnterEvent *e)
 {
-    const bool ok = e->mimeData()->hasFormat(DragDrop::MimePiece) ||
-                    e->mimeData()->hasFormat(DragDrop::MimeEventPiece);
+    const auto *md = e->mimeData();
+    const bool isToken  = md->hasFormat(MimeListToken);
+    const bool isPiece  = md->hasFormat(MimeListPiece);
+    const bool isDialog = md->hasFormat(MimeDialogPiece);
 
-    if (!ok) { QGraphicsView::dragEnterEvent(e); return; }
+    if (!isToken && !isPiece && !isDialog) {
+        QGraphicsView::dragEnterEvent(e);
+        return;
+    }
 
-    e->acceptProposedAction();
+    if ((isPiece || isDialog) && !canDropToLand(e->position().toPoint())) {
+        e->ignore();
+        return;
+    }
+
+    e->setDropAction(Qt::MoveAction);
+    e->accept();
 }
 
 void GraphicsView::dragMoveEvent(QDragMoveEvent *e)
 {
-    const bool isNormal = e->mimeData()->hasFormat(DragDrop::MimePiece);
-    const bool isEvent  = e->mimeData()->hasFormat(DragDrop::MimeEventPiece);
+    const auto *md = e->mimeData();
+    const bool isToken  = md->hasFormat(MimeListToken);
+    const bool isPiece  = md->hasFormat(MimeListPiece);
+    const bool isDialog = md->hasFormat(MimeDialogPiece);
 
-    if (!isNormal && !isEvent) { QGraphicsView::dragMoveEvent(e); return; }
-
-    if (canDropToLand(e->position().toPoint())) {
-        e->setDropAction(Qt::MoveAction);
-        e->accept();
-    } else {
-        e->ignore();
+    if (!isToken && !isPiece && !isDialog) {
+        QGraphicsView::dragMoveEvent(e);
+        return;
     }
+
+    if ((isPiece || isDialog) && !canDropToLand(e->position().toPoint())) {
+        e->ignore();
+        return;
+    }
+
+    e->setDropAction(Qt::MoveAction);
+    e->accept();
 }
 
 void GraphicsView::dragLeaveEvent(QDragLeaveEvent *e)
@@ -75,28 +92,28 @@ void GraphicsView::dragLeaveEvent(QDragLeaveEvent *e)
 
 void GraphicsView::dropEvent(QDropEvent *e)
 {
-    const bool isNormal = e->mimeData()->hasFormat(DragDrop::MimePiece);
-    const bool isEvent  = e->mimeData()->hasFormat(DragDrop::MimeEventPiece);
+    const auto *md = e->mimeData();
+    const bool isToken  = md->hasFormat(MimeListToken);
+    const bool isDialog = md->hasFormat(MimeDialogPiece);
+    const bool isPiece  = md->hasFormat(MimeListPiece);
 
-    if (!isNormal && !isEvent) { QGraphicsView::dropEvent(e); return; }
+    if (!isToken && !isDialog && !isPiece) {
+        QGraphicsView::dropEvent(e);
+        return;
+    }
 
-    if (!canDropToLand(e->position().toPoint())) {
+    if ((isDialog || isPiece) && !canDropToLand(e->position().toPoint())) {
         e->ignore();
         return;
     }
 
+    const QString fmt = isToken ? MimeListToken : (isDialog ? MimeDialogPiece : MimeListPiece);
+
+    const QString pixPath = QString::fromUtf8(md->data(fmt));
     const QPointF scenePos = mapToScene(e->position().toPoint());
 
-    if (isNormal) {
-        const QString pixPath = QString::fromUtf8(e->mimeData()->data(DragDrop::MimePiece));
-        emit dropPieceToScene(scenePos, pixPath);
-    }
-    if (isEvent) {
-        const QString pixPath = QString::fromUtf8(e->mimeData()->data(DragDrop::MimeEventPiece));
-        emit dropEventPieceToScene(scenePos, pixPath);
-    }
+    emit dropPieceToScene(scenePos, pixPath);
 
     e->setDropAction(Qt::MoveAction);
     e->accept();
 }
-

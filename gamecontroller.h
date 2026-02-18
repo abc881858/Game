@@ -96,14 +96,12 @@ public slots:
     void dropPieceToScene(QPointF scenePos, QString pixPath);
     void splitPieceToRegion(PieceItem* piece, int a, int b);
     void movePieceToRegion(PieceItem *piece, const QPointF &sceneCenter);
-
     void onStrikePass();
 
 signals:
     void setCurrentSegment(int step1to5_or_0);   // 0表示不在行动步骤；1..5对应环节
     void logLine(const QString& line, const QColor &color, bool newLine);
     void stateChanged();
-
     void battleUnitsChanged(const QStringList& atkPix, const QStringList& defPix);
     void strikeGroupsChanged(const QList<StrikeGroupEntry>& atk, const QList<StrikeGroupEntry>& def, Side currentTurn, bool finished);
 };

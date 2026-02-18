@@ -25,5 +25,4 @@ private:
 
 signals:
     void dropPieceToScene(QPointF scenePos, QString pixPath);
-    void dropEventPieceToScene(QPointF scenePos, QString pixPath);
 };

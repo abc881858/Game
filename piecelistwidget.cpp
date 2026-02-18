@@ -16,24 +16,25 @@ void PieceListWidget::startDrag(Qt::DropActions)
     int count = it->data(Qt::UserRole + 1).toInt();
     if (count <= 0) return;
 
+    auto* mime = new QMimeData;
+
     const QString pixPath = it->data(Qt::UserRole).toString();
     if (pixPath.contains("_XDQ", Qt::CaseSensitive)) {
         if (!m_controller->canDragActionToken(m_side)) return;
+        mime->setData(MimeListToken, pixPath.toUtf8());
     } else {
         if (!(m_controller->canDragPieceInMoveSegment(m_side) ||
               m_controller->canDragPieceInBattleSegment(m_side)))
         return;
+        mime->setData(MimeListPiece, pixPath.toUtf8());
     }
-
-    auto* mime = new QMimeData;
-    mime->setData(DragDrop::MimePiece, pixPath.toUtf8());
 
     auto* drag = new QDrag(this);
     drag->setMimeData(mime);
     drag->setPixmap(QPixmap(pixPath).scaled(72,72, Qt::KeepAspectRatio, Qt::SmoothTransformation));
     drag->setHotSpot(QPoint(drag->pixmap().width()/2, drag->pixmap().height()/2));
 
-    Qt::DropAction r = drag->exec(Qt::MoveAction, Qt::MoveAction);
+    Qt::DropAction r = drag->exec(Qt::MoveAction);
     if (r == Qt::MoveAction) {
         int newCount = count - 1;
 

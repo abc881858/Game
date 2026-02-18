@@ -18,7 +18,7 @@ public:
     int oilfield;//油田
     bool is_supply_source;//补给源
     int scoring;//计分
-    Nation occupying;//占领国
+    Nation occupy;//占领国
     Nation local;//本土
 
 private:
