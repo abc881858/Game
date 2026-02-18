@@ -20,6 +20,7 @@ protected:
     void dragLeaveEvent(QDragLeaveEvent *e) override;
 
 private:
+    bool canDropToLand(const QPoint& viewPos) const;
     GraphicsFrame *m_graphicsFrame = nullptr;
 
 signals:

@@ -3,7 +3,6 @@
 #include <QMimeData>
 #include "pieceentrywidget.h"
 #include "gamecontroller.h"
-#include "dragdrop.h"
 
 PieceListWidget::PieceListWidget(QWidget* parent) : QListWidget(parent)
 {

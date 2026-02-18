@@ -1,10 +1,17 @@
 #pragma once
 
 #include <QString>
+#include <QStringList>
+#include <QMimeData>
 #include <QGraphicsItem>
 
 inline constexpr int RegionType = QGraphicsItem::UserType + 100;
 inline constexpr int PieceType = QGraphicsItem::UserType + 200;
+
+namespace DragDrop {
+inline constexpr const char* MimePiece      = "application/x-piece";
+inline constexpr const char* MimeEventPiece = "application/x-event-piece";
+}
 
 enum class Side { D, S };
 

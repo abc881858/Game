@@ -27,7 +27,6 @@ HEADERS += \
     battledialog.h \
     battlefielddialog.h \
     battlesetupdialog.h \
-    dragdrop.h \
     eventdialog.h \
     gamecontroller.h \
     graphicsframe.h \
