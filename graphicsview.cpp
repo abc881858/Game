@@ -5,6 +5,8 @@
 #include <QDropEvent>
 #include "graphicsframe.h"
 #include "util.h"
+#include "regionitem.h"
+#include <QDebug>
 
 GraphicsView::GraphicsView(GraphicsFrame *graphicsFrame)
     : QGraphicsView()
@@ -15,19 +17,19 @@ GraphicsView::GraphicsView(GraphicsFrame *graphicsFrame)
     setMouseTracking(true);
 }
 
-bool GraphicsView::canDropToLand(const QPoint& viewPos) const
+RegionItem* GraphicsView::regionAtViewPos(const QPoint& viewPos) const
 {
-    if (!scene()) return false;
+    if (!scene()) return nullptr;
 
     const QPointF scenePos = mapToScene(viewPos);
-    const auto items = scene()->items(scenePos, Qt::IntersectsItemShape, Qt::DescendingOrder);
+    const auto items = scene()->items(scenePos, Qt::IntersectsItemBoundingRect, Qt::DescendingOrder);
 
     for (auto* it : items) {
-        if (it && it->type() == RegionType) {
-            return true;
+        if (auto* r = qgraphicsitem_cast<RegionItem*>(it)) {
+            return r;
         }
     }
-    return false;
+    return nullptr;
 }
 
 void GraphicsView::wheelEvent(QWheelEvent *e)
@@ -55,9 +57,14 @@ void GraphicsView::dragEnterEvent(QDragEnterEvent *e)
         return;
     }
 
-    if ((isPiece || isDialog) && !canDropToLand(e->position().toPoint())) {
-        e->ignore();
-        return;
+    if (isPiece || isDialog) {
+        RegionItem* r = regionAtViewPos(e->position().toPoint());
+        if (!r) { e->ignore(); return; }
+
+        if (isDialog && r->occupy != Nation::Soviet) {
+            e->ignore();
+            return;
+        }
     }
 
     e->setDropAction(Qt::MoveAction);
@@ -76,13 +83,22 @@ void GraphicsView::dragMoveEvent(QDragMoveEvent *e)
         return;
     }
 
-    if ((isPiece || isDialog) && !canDropToLand(e->position().toPoint())) {
-        e->ignore();
-        return;
+    if (isPiece || isDialog) {
+        RegionItem* r = regionAtViewPos(e->position().toPoint());
+        if (!r) { e->ignore(); return; }
+
+        if (isDialog && r->occupy != Nation::Soviet) {
+            e->ignore();
+            return;
+        }
     }
 
     e->setDropAction(Qt::MoveAction);
     e->accept();
+
+    qDebug() << "possible=" << e->possibleActions()
+             << "proposed=" << e->proposedAction()
+             << "drop=" << e->dropAction();
 }
 
 void GraphicsView::dragLeaveEvent(QDragLeaveEvent *e)
@@ -102,9 +118,14 @@ void GraphicsView::dropEvent(QDropEvent *e)
         return;
     }
 
-    if ((isDialog || isPiece) && !canDropToLand(e->position().toPoint())) {
-        e->ignore();
-        return;
+    if (isPiece || isDialog) {
+        RegionItem* r = regionAtViewPos(e->position().toPoint());
+        if (!r) { e->ignore(); return; }
+
+        if (isDialog && r->occupy != Nation::Soviet) {
+            e->ignore();
+            return;
+        }
     }
 
     const QString fmt = isToken ? MimeListToken : (isDialog ? MimeDialogPiece : MimeListPiece);

@@ -4,25 +4,22 @@
 #include <QSet>
 
 class GraphicsFrame;
+class RegionItem;
 
 class GraphicsView : public QGraphicsView
 {
     Q_OBJECT
-
 public:
     explicit GraphicsView(GraphicsFrame *graphicsFrame);
-
 protected:
     void wheelEvent(QWheelEvent *) override;
     void dragEnterEvent(QDragEnterEvent *e) override;
     void dragMoveEvent(QDragMoveEvent *e) override;
     void dropEvent(QDropEvent *e) override;
     void dragLeaveEvent(QDragLeaveEvent *e) override;
-
 private:
-    bool canDropToLand(const QPoint& viewPos) const;
+    RegionItem *regionAtViewPos(const QPoint &viewPos) const;
     GraphicsFrame *m_graphicsFrame = nullptr;
-
 signals:
     void dropPieceToScene(QPointF scenePos, QString pixPath);
 };

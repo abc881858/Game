@@ -10,7 +10,7 @@ inline constexpr int PieceType = QGraphicsItem::UserType + 200;
 
 inline constexpr const char* MimeListPiece   = "application/x-list-piece";
 inline constexpr const char* MimeListToken   = "application/x-list-token";
-inline constexpr const char* MimeDialogPiece = "application/x-event-piece";
+inline constexpr const char* MimeDialogPiece = "application/x-dialog-piece";
 
 enum class Side { D, S };
 

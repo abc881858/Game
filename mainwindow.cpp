@@ -319,15 +319,8 @@ void MainWindow::initPieceLists()
 
 void MainWindow::actionEvent1()
 {
-    QSet<int> allowed = { 2,3,4,5,6,7,8,9,10,11,12,13,16,17,18,19,20,22,23,24,25,26,27,28,31,32,33,34 };
-    m_gameController->setEventAllowedRegions(allowed);
-
     EventDialog* dlg = new EventDialog(this);
-
-    connect(dlg, &QDialog::finished, this, [this, dlg](int){
-        m_gameController->clearEventAllowedRegions();
-        dlg->deleteLater();
-    });
+    connect(dlg, &QDialog::finished, dlg, &QDialog::deleteLater);
 
     dlg->setEventId("SLYBD");//事件-苏联预备队
     dlg->addEventPiece("4级兵团", ":/S/S_4JBT.png", 3);

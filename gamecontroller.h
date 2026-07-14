@@ -54,8 +54,8 @@ public:
     void addAP(Side side, int delta);    // 统一入口：加/扣 AP（含进入行动步骤触发）
     void clearAP(Side side);             // 规则9.5清零用
     int currentAP(Side side) const;
-    void setEventAllowedRegions(const QSet<int>& ids) { m_eventAllowedRegions = ids; }
-    void clearEventAllowedRegions() { m_eventAllowedRegions.clear(); }
+    // void setEventAllowedRegions(const QSet<int>& ids) { m_eventAllowedRegions = ids; }
+    // void clearEventAllowedRegions() { m_eventAllowedRegions.clear(); }
     void startActionStep(Side side);     // 开始行动步骤（默认 Move）
     void endActionStep();                // 结束整个行动步骤（清状态 + 限制拖拽）
     void goNextSegment();                // 结束当前环节 -> 进入下一个 or 结束阶段
@@ -67,7 +67,7 @@ public:
 private:
     QHash<int, Side> m_owner;//开局占领国要修正
     MapGraph m_graph;
-    QSet<int> m_eventAllowedRegions;
+    // QSet<int> m_eventAllowedRegions;
     GameState m_gameState;
     ActionStepState m_actionStep;
     QGraphicsScene* m_scene = nullptr;

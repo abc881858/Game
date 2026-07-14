@@ -156,13 +156,6 @@ PieceItem* GameController::createPieceToRegion(int regionId, const QString& pixP
     // 行动签不生成棋子
     if (pixPath.contains("_XDQ", Qt::CaseSensitive)) return nullptr;
 
-    // if (!m_eventAllowedRegions.isEmpty()) {
-    //     if (!m_eventAllowedRegions.contains(regionId)) {
-    //         emit logLine(QString("事件落子失败：region %1 不在允许列表").arg(regionId), Qt::black, true);
-    //         return nullptr;
-    //     }
-    // }
-
     PieceItem* item = new PieceItem(QPixmap(pixPath));
 
     Side side;

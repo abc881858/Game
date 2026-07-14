@@ -18,7 +18,6 @@ protected:
         if (!it) return;
 
         const int srcRow = row(it);
-        // const QString eventId = it->data(Qt::UserRole + 1).toString();
         const QString pixPath = it->data(Qt::UserRole).toString();
 
         auto *mime = new QMimeData;
@@ -30,12 +29,10 @@ protected:
         QPixmap pm(pixPath);
         drag.setPixmap(pm.scaled(64, 64, Qt::KeepAspectRatio, Qt::SmoothTransformation));
         drag.setHotSpot(QPoint(drag.pixmap().width()/2, drag.pixmap().height()/2));
+        drag.exec(Qt::MoveAction);
 
-        const Qt::DropAction act = drag.exec(Qt::MoveAction, Qt::MoveAction);
-        if (act == Qt::MoveAction) {
-            if (srcRow >= 0 && srcRow < count()) {
-                delete takeItem(srcRow);
-            }
+        if (srcRow >= 0 && srcRow < count()) {
+            delete takeItem(srcRow);
         }
     }
 };
